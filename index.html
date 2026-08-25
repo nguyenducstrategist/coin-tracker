@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhận định Coin Hàng ngày</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Nhận định Coin Hàng ngày</h1>
+        <p class="subtitle">TP1 • TP2 • TP3 • Tự động lấy giá Binance • Minh bạch công khai</p>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="number" id="total">0</div>
+                <div class="label">Tổng lệnh</div>
+            </div>
+            <div class="stat-box">
+                <div class="number" id="tp1Count">0</div>
+                <div class="label">Đạt TP1</div>
+            </div>
+            <div class="stat-box">
+                <div class="number" id="tp2Count">0</div>
+                <div class="label">Đạt TP2</div>
+            </div>
+            <div class="stat-box">
+                <div class="number" id="tp3Count">0</div>
+                <div class="label">Đạt TP3</div>
+            </div>
+            <div class="stat-box">
+                <div class="number" id="lastUpdate" style="font-size:0.95rem">--:--</div>
+                <div class="label">Cập nhật</div>
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <div class="filter">
+                <button class="active" onclick="filterList('all')">Tất cả</button>
+                <button onclick="filterList('today')">Hôm nay</button>
+                <button onclick="filterList('hit')">Đã đạt TP</button>
+                <button onclick="filterList('pending')">Chưa đạt</button>
+            </div>
+            <div>
+                <button class="refresh-btn" onclick="updateAllPrices()">🔄 Cập nhật giá</button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">Đang lấy giá từ Binance...</div>
+        <div class="coin-list" id="coinList"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
