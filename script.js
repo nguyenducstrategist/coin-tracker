@@ -29,7 +29,7 @@ coinsRef.on('value', (snapshot) => {
 });
 
 async function fetchPrice(symbol) {
-    // 1. Thử Spot (bao gồm nhiều token Alpha đã list Spot)
+    // 1. Thử Spot
     try {
         const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}USDT`);
         if (res.ok) {
@@ -47,7 +47,7 @@ async function fetchPrice(symbol) {
         }
     } catch (e) {}
 
-    // 3. Thử thêm endpoint khác (đôi khi Alpha dùng)
+    // 3. Thử 24hr
     try {
         const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}USDT`);
         if (res.ok) {
@@ -141,4 +141,27 @@ function renderList() {
         return `
         <div class="coin-card ${hasHit ? 'has-hit' : ''}">
             <div class="card-header">
-                <div style="display:flex;align
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div class="coin-name">${c.coin}</div>
+                    <span class="side-badge ${c.side === 'LONG' ? 'side-long' : 'side-short'}">${c.side}</span>
+                </div>
+                <div class="time">${c.time}</div>
+            </div>
+
+            <div class="prices-grid">
+                <div class="price-box">
+                    <div class="label">Vào lệnh</div>
+                    <div class="value">$${c.entry.toLocaleString()}</div>
+                </div>
+                <div class="price-box">
+                    <div class="label">Giá hiện tại</div>
+                    <div class="value">${currentHtml}</div>
+                </div>
+                <div class="price-box">
+                    <div class="label">TP1</div>
+                    <div class="value">$${c.tp1.toLocaleString()}</div>
+                </div>
+                <div class="price-box">
+                    <div class="label">TP2</div>
+                    <div class="value">$${c.tp2.toLocaleString()}</div>
+               
