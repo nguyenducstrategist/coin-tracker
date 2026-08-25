@@ -23,33 +23,24 @@ coinsRef.on('value', (snapshot) => {
         id: key,
         ...data[key]
     })).sort((a, b) => b.timestamp - a.timestamp);
-
     renderList();
     updateStats();
 });
 
 async function fetchPrice(symbol) {
     try {
-        const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}USDT`);
+        let res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + symbol + 'USDT');
         if (res.ok) {
-            const data = await res.json();
+            let data = await res.json();
             return parseFloat(data.price);
         }
     } catch (e) {}
 
     try {
-        const res = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${symbol}USDT`);
+        let res = await fetch('https://fapi.binance.com/fapi/v1/ticker/price?symbol=' + symbol + 'USDT');
         if (res.ok) {
-            const data = await res.json();
+            let data = await res.json();
             return parseFloat(data.price);
-        }
-    } catch (e) {}
-
-    try {
-        const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}USDT`);
-        if (res.ok) {
-            const data = await res.json();
-            return parseFloat(data.lastPrice);
         }
     } catch (e) {}
 
@@ -60,15 +51,14 @@ async function updateAllPrices() {
     if (coins.length === 0) return;
     document.getElementById('loading').style.display = 'block';
 
-    const unique = [...new Set(coins.map(c => c.coin))];
+    let unique = [...new Set(coins.map(c => c.coin))];
     await Promise.all(unique.map(async s => {
-        const p = await fetchPrice(s);
-        priceCache[s] = p;
+        priceCache[s] = await fetchPrice(s);
     }));
 
-    const updates = {};
+    let updates = {};
     coins.forEach(c => {
-        const price = priceCache[c.coin];
+        let price = priceCache[c.coin];
         if (price === null || price === undefined) return;
 
         let hitTP1 = c.hitTP1 || false;
@@ -86,9 +76,9 @@ async function updateAllPrices() {
         }
 
         if (hitTP1 !== c.hitTP1 || hitTP2 !== c.hitTP2 || hitTP3 !== c.hitTP3) {
-            updates[`${c.id}/hitTP1`] = hitTP1;
-            updates[`${c.id}/hitTP2`] = hitTP2;
-            updates[`${c.id}/hitTP3`] = hitTP3;
+            updates[c.id + '/hitTP1'] = hitTP1;
+            updates[c.id + '/hitTP2'] = hitTP2;
+            updates[c.id + '/hitTP3'] = hitTP3;
         }
     });
 
@@ -103,11 +93,11 @@ async function updateAllPrices() {
 }
 
 function renderList() {
-    const list = document.getElementById('coinList');
+    let list = document.getElementById('coinList');
     let filtered = [...coins];
 
     if (currentFilter === 'today') {
-        const today = new Date().toDateString();
+        let today = new Date().toDateString();
         filtered = coins.filter(c => new Date(c.timestamp).toDateString() === today);
     } else if (currentFilter === 'hit') {
         filtered = coins.filter(c => c.hitTP1 || c.hitTP2 || c.hitTP3);
@@ -116,12 +106,13 @@ function renderList() {
     }
 
     if (filtered.length === 0) {
-        list.innerHTML = `<div class="empty">Chưa có nhận định nào</div>`;
+        list.innerHTML = '<div class="empty">Chưa có nhận định nào</div>';
         return;
     }
 
-    list.innerHTML = filtered.map(c => {
-        const current = priceCache[c.coin];
+    let html = '';
+    filtered.forEach(c => {
+        let current = priceCache[c.coin];
         let currentHtml = '';
 
         if (current === undefined) {
@@ -129,53 +120,39 @@ function renderList() {
         } else if (current === null) {
             currentHtml = '<span style="color:#ff5252">Không tìm thấy</span>';
         } else {
-            const isUp = current >= c.entry;
-            currentHtml = `<span class="current-price ${isUp ? 'up' : 'down'}">$${current.toLocaleString(undefined,{maximumFractionDigits:6})}</span>`;
+            let isUp = current >= c.entry;
+            currentHtml = '<span class="current-price ' + (isUp ? 'up' : 'down') + '">$' + current.toLocaleString(undefined,{maximumFractionDigits:6}) + '</span>';
         }
 
-        const hasHit = c.hitTP1 || c.hitTP2 || c.hitTP3;
+        let hasHit = c.hitTP1 || c.hitTP2 || c.hitTP3;
+        let sideClass = c.side === 'LONG' ? 'side-long' : 'side-short';
 
-        return `
-        <div class="coin-card ${hasHit ? 'has-hit' : ''}">
-            <div class="card-header">
-                <div style="display:flex;align-items:center;gap:12px;">
-                    <div class="coin-name">${c.coin}</div>
-                    <span class="side-badge ${c.side === 'LONG' ? 'side-long' : 'side-short'}">${c.side}</span>
-                </div>
-                <div class="time">${c.time}</div>
-            </div>
+        html += '<div class="coin-card ' + (hasHit ? 'has-hit' : '') + '">';
+        html += '<div class="card-header">';
+        html += '<div style="display:flex;align-items:center;gap:12px;">';
+        html += '<div class="coin-name">' + c.coin + '</div>';
+        html += '<span class="side-badge ' + sideClass + '">' + c.side + '</span>';
+        html += '</div>';
+        html += '<div class="time">' + c.time + '</div>';
+        html += '</div>';
 
-            <div class="prices-grid">
-                <div class="price-box">
-                    <div class="label">Vào lệnh</div>
-                    <div class="value">$${c.entry.toLocaleString()}</div>
-                </div>
-                <div class="price-box">
-                    <div class="label">Giá hiện tại</div>
-                    <div class="value">${currentHtml}</div>
-                </div>
-                <div class="price-box">
-                    <div class="label">TP1</div>
-                    <div class="value">$${c.tp1.toLocaleString()}</div>
-                </div>
-                <div class="price-box">
-                    <div class="label">TP2</div>
-                    <div class="value">$${c.tp2.toLocaleString()}</div>
-                </div>
-                <div class="price-box">
-                    <div class="label">TP3</div>
-                    <div class="value">$${c.tp3.toLocaleString()}</div>
-                </div>
-            </div>
+        html += '<div class="prices-grid">';
+        html += '<div class="price-box"><div class="label">Vào lệnh</div><div class="value">$' + c.entry.toLocaleString() + '</div></div>';
+        html += '<div class="price-box"><div class="label">Giá hiện tại</div><div class="value">' + currentHtml + '</div></div>';
+        html += '<div class="price-box"><div class="label">TP1</div><div class="value">$' + c.tp1.toLocaleString() + '</div></div>';
+        html += '<div class="price-box"><div class="label">TP2</div><div class="value">$' + c.tp2.toLocaleString() + '</div></div>';
+        html += '<div class="price-box"><div class="label">TP3</div><div class="value">$' + c.tp3.toLocaleString() + '</div></div>';
+        html += '</div>';
 
-            <div class="tp-status">
-                <div class="tp-badge ${c.hitTP1 ? 'hit' : ''}">TP1 ${c.hitTP1 ? '✓' : '○'}</div>
-                <div class="tp-badge ${c.hitTP2 ? 'hit' : ''}">TP2 ${c.hitTP2 ? '✓' : '○'}</div>
-                <div class="tp-badge ${c.hitTP3 ? 'hit' : ''}">TP3 ${c.hitTP3 ? '✓' : '○'}</div>
-            </div>
-        </div>
-        `;
-    }).join('');
+        html += '<div class="tp-status">';
+        html += '<div class="tp-badge ' + (c.hitTP1 ? 'hit' : '') + '">TP1 ' + (c.hitTP1 ? '✓' : '○') + '</div>';
+        html += '<div class="tp-badge ' + (c.hitTP2 ? 'hit' : '') + '">TP2 ' + (c.hitTP2 ? '✓' : '○') + '</div>';
+        html += '<div class="tp-badge ' + (c.hitTP3 ? 'hit' : '') + '">TP3 ' + (c.hitTP3 ? '✓' : '○') + '</div>';
+        html += '</div>';
+        html += '</div>';
+    });
+
+    list.innerHTML = html;
 }
 
 function updateStats() {
