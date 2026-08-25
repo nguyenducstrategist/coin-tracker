@@ -1,0 +1,188 @@
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+body {
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    color: #fff;
+    min-height: 100vh;
+    padding: 20px;
+}
+.container { max-width: 1200px; margin: 0 auto; }
+h1 {
+    text-align: center;
+    margin-bottom: 8px;
+    font-size: 2rem;
+    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.subtitle { text-align: center; color: #aaa; margin-bottom: 25px; font-size: 0.95rem; }
+
+.form-card {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    padding: 22px;
+    margin-bottom: 25px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.form-row {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1fr 1fr 1fr 1fr auto;
+    gap: 11px;
+    align-items: end;
+}
+@media (max-width: 1000px) {
+    .form-row { grid-template-columns: 1fr 1fr; }
+}
+label { display: block; margin-bottom: 5px; font-size: 0.82rem; color: #bbb; }
+input, select {
+    width: 100%;
+    padding: 11px 12px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.35);
+    color: #fff;
+    font-size: 0.95rem;
+    outline: none;
+}
+input:focus, select:focus { box-shadow: 0 0 0 2px #00d2ff; }
+button {
+    padding: 11px 18px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.25s;
+    white-space: nowrap;
+}
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 18px rgba(0,210,255,0.4);
+}
+
+.stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+.stat-box {
+    flex: 1;
+    min-width: 120px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.stat-box .number { font-size: 1.6rem; font-weight: bold; color: #00d2ff; }
+.stat-box .label { font-size: 0.78rem; color: #aaa; margin-top: 3px; }
+
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.filter { display: flex; gap: 8px; flex-wrap: wrap; }
+.filter button {
+    background: rgba(255,255,255,0.1);
+    padding: 7px 14px;
+    font-size: 0.85rem;
+}
+.filter button.active { background: linear-gradient(90deg, #00d2ff, #3a7bd5); }
+.refresh-btn { background: #00c853 !important; }
+
+.coin-list { display: flex; flex-direction: column; gap: 14px; }
+.coin-card {
+    background: rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 16px 18px;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: 0.3s;
+}
+.coin-card.has-hit {
+    border-color: #00ff88;
+    background: rgba(0,255,136,0.08);
+    box-shadow: 0 0 12px rgba(0,255,136,0.12);
+}
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.coin-name { font-size: 1.35rem; font-weight: 700; color: #00d2ff; }
+.side-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.side-long { background: rgba(0,255,136,0.2); color: #00ff88; }
+.side-short { background: rgba(255,82,82,0.2); color: #ff5252; }
+.time { font-size: 0.82rem; color: #aaa; }
+
+.prices-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.price-box {
+    background: rgba(0,0,0,0.25);
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.price-box .label { font-size: 0.75rem; color: #999; margin-bottom: 3px; }
+.price-box .value { font-size: 1.05rem; font-weight: 600; }
+
+.tp-status {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+.tp-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: rgba(255,255,255,0.08);
+    color: #bbb;
+}
+.tp-badge.hit {
+    background: rgba(0,255,136,0.25);
+    color: #00ff88;
+    box-shadow: 0 0 8px rgba(0,255,136,0.3);
+}
+.current-price { font-weight: 700; }
+.current-price.up { color: #00ff88; }
+.current-price.down { color: #ff5252; }
+
+.delete-btn {
+    background: #ff4757 !important;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+.empty {
+    text-align: center;
+    padding: 50px;
+    color: #666;
+    font-size: 1.1rem;
+}
+.loading {
+    text-align: center;
+    color: #00d2ff;
+    margin: 10px 0;
+    font-size: 0.9rem;
+    display: none;
+}
+@media (max-width: 700px) {
+    .prices-grid { grid-template-columns: 1fr 1fr; }
+}
