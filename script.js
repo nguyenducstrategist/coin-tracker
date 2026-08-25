@@ -29,15 +29,34 @@ coinsRef.on('value', (snapshot) => {
 });
 
 async function fetchPrice(symbol) {
+    // 1. Thử Spot (bao gồm nhiều token Alpha đã list Spot)
     try {
         const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}USDT`);
-        if (!res.ok) throw new Error('Không tìm thấy');
-        const data = await res.json();
-        return parseFloat(data.price);
-    } catch (e) {
-        console.error(symbol, e);
-        return null;
-    }
+        if (res.ok) {
+            const data = await res.json();
+            return parseFloat(data.price);
+        }
+    } catch (e) {}
+
+    // 2. Thử Futures
+    try {
+        const res = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${symbol}USDT`);
+        if (res.ok) {
+            const data = await res.json();
+            return parseFloat(data.price);
+        }
+    } catch (e) {}
+
+    // 3. Thử thêm endpoint khác (đôi khi Alpha dùng)
+    try {
+        const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}USDT`);
+        if (res.ok) {
+            const data = await res.json();
+            return parseFloat(data.lastPrice);
+        }
+    } catch (e) {}
+
+    return null;
 }
 
 async function updateAllPrices() {
@@ -47,13 +66,13 @@ async function updateAllPrices() {
     const unique = [...new Set(coins.map(c => c.coin))];
     await Promise.all(unique.map(async s => {
         const p = await fetchPrice(s);
-        if (p !== null) priceCache[s] = p;
+        priceCache[s] = p;
     }));
 
     const updates = {};
     coins.forEach(c => {
         const price = priceCache[c.coin];
-        if (price === undefined) return;
+        if (price === null || price === undefined) return;
 
         let hitTP1 = c.hitTP1 || false;
         let hitTP2 = c.hitTP2 || false;
@@ -106,8 +125,13 @@ function renderList() {
 
     list.innerHTML = filtered.map(c => {
         const current = priceCache[c.coin];
-        let currentHtml = '<span style="color:#888">Đang tải...</span>';
-        if (current !== undefined) {
+        let currentHtml = '';
+
+        if (current === undefined) {
+            currentHtml = '<span style="color:#888">Đang tải...</span>';
+        } else if (current === null) {
+            currentHtml = '<span style="color:#ff5252">Không tìm thấy</span>';
+        } else {
             const isUp = current >= c.entry;
             currentHtml = `<span class="current-price ${isUp ? 'up' : 'down'}">$${current.toLocaleString(undefined,{maximumFractionDigits:6})}</span>`;
         }
@@ -117,59 +141,4 @@ function renderList() {
         return `
         <div class="coin-card ${hasHit ? 'has-hit' : ''}">
             <div class="card-header">
-                <div style="display:flex;align-items:center;gap:12px;">
-                    <div class="coin-name">${c.coin}</div>
-                    <span class="side-badge ${c.side === 'LONG' ? 'side-long' : 'side-short'}">${c.side}</span>
-                </div>
-                <div class="time">${c.time}</div>
-            </div>
-
-            <div class="prices-grid">
-                <div class="price-box">
-                    <div class="label">Vào lệnh</div>
-                    <div class="value">$${c.entry.toLocaleString()}</div>
-                </div>
-                <div class="price-box">
-                    <div class="label">Giá hiện tại</div>
-                    <div class="value">${currentHtml}</div>
-                </div>
-                <div class="price-box">
-                    <div class="label">TP1</div>
-                    <div class="value">$${c.tp1.toLocaleString()}</div>
-                </div>
-                <div class="price-box">
-                    <div class="label">TP2</div>
-                    <div class="value">$${c.tp2.toLocaleString()}</div>
-                </div>
-                <div class="price-box">
-                    <div class="label">TP3</div>
-                    <div class="value">$${c.tp3.toLocaleString()}</div>
-                </div>
-            </div>
-
-            <div class="tp-status">
-                <div class="tp-badge ${c.hitTP1 ? 'hit' : ''}">TP1 ${c.hitTP1 ? '✓' : '○'}</div>
-                <div class="tp-badge ${c.hitTP2 ? 'hit' : ''}">TP2 ${c.hitTP2 ? '✓' : '○'}</div>
-                <div class="tp-badge ${c.hitTP3 ? 'hit' : ''}">TP3 ${c.hitTP3 ? '✓' : '○'}</div>
-            </div>
-        </div>
-        `;
-    }).join('');
-}
-
-function updateStats() {
-    document.getElementById('total').textContent = coins.length;
-    document.getElementById('tp1Count').textContent = coins.filter(c => c.hitTP1).length;
-    document.getElementById('tp2Count').textContent = coins.filter(c => c.hitTP2).length;
-    document.getElementById('tp3Count').textContent = coins.filter(c => c.hitTP3).length;
-}
-
-function filterList(type) {
-    currentFilter = type;
-    document.querySelectorAll('.filter button').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-    renderList();
-}
-
-setInterval(updateAllPrices, 30000);
-updateAllPrices();
+                <div style="display:flex;align
