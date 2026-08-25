@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Nhận định Coin</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        .login-box {
+            max-width: 400px;
+            margin: 100px auto;
+            background: rgba(255,255,255,0.08);
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .login-box input {
+            width: 100%;
+            margin: 15px 0;
+            padding: 12px;
+        }
+        #adminContent { display: none; }
+    </style>
+</head>
+<body>
+    <!-- Màn hình đăng nhập -->
+    <div class="login-box" id="loginBox">
+        <h2>🔒 Admin</h2>
+        <p style="color:#aaa; margin-bottom:15px;">Nhập mật khẩu để thêm nhận định</p>
+        <input type="password" id="password" placeholder="Mật khẩu..." onkeypress="if(event.key==='Enter') checkPassword()">
+        <button onclick="checkPassword()">Vào</button>
+        <p id="error" style="color:#ff5252; margin-top:10px; display:none;">Sai mật khẩu!</p>
+    </div>
+
+    <!-- Nội dung admin (ẩn mặc định) -->
+    <div class="container" id="adminContent">
+        <h1>📥 Thêm Nhận định</h1>
+        <p class="subtitle">Chỉ bạn mới vào được trang này</p>
+
+        <div class="form-card">
+            <div class="form-row">
+                <div>
+                    <label>COIN</label>
+                    <input type="text" id="coin" placeholder="BTC" required>
+                </div>
+                <div>
+                    <label>Giá vào lệnh</label>
+                    <input type="number" id="entry" placeholder="65000" step="any" required>
+                </div>
+                <div>
+                    <label>TP1</label>
+                    <input type="number" id="tp1" placeholder="66000" step="any" required>
+                </div>
+                <div>
+                    <label>TP2</label>
+                    <input type="number" id="tp2" placeholder="67500" step="any" required>
+                </div>
+                <div>
+                    <label>TP3</label>
+                    <input type="number" id="tp3" placeholder="69000" step="any" required>
+                </div>
+                <div>
+                    <label>Hướng</label>
+                    <select id="side">
+                        <option value="LONG">LONG 📈</option>
+                        <option value="SHORT">SHORT 📉</option>
+                    </select>
+                </div>
+                <div>
+                    <button onclick="addCoin()">+ Lưu nhận định</button>
+                </div>
+            </div>
+        </div>
+
+        <p style="text-align:center; margin-top:30px;">
+            <a href="index.html" style="color:#00d2ff;">← Quay lại trang công khai</a>
+        </p>
+    </div>
+
+    <script>
+        // ================== CẤU HÌNH ==================
+        const ADMIN_PASSWORD = "duc123";   // ← ĐỔI MẬT KHẨU Ở ĐÂY
+        // =============================================
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDKA8vVF_aSF-K6s5KYE_rvqfWczKcq58I",
+          authDomain: "coin-tracker-eab72.firebaseapp.com",
+          databaseURL: "https://coin-tracker-eab72-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "coin-tracker-eab72",
+          storageBucket: "coin-tracker-eab72.firebasestorage.app",
+          messagingSenderId: "901455627673",
+          appId: "1:901455627673:web:d02f1a3495416a0cf87f08",
+          measurementId: "G-KZS11T7QXV"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const coinsRef = db.ref('coins');
+
+        function checkPassword() {
+            const pass = document.getElementById('password').value;
+            if (pass === ADMIN_PASSWORD) {
+                document.getElementById('loginBox').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+            } else {
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        function addCoin() {
+            const coin = document.getElementById('coin').value.trim().toUpperCase();
+            const entry = parseFloat(document.getElementById('entry').value);
+            const tp1 = parseFloat(document.getElementById('tp1').value);
+            const tp2 = parseFloat(document.getElementById('tp2').value);
+            const tp3 = parseFloat(document.getElementById('tp3').value);
+            const side = document.getElementById('side').value;
+
+            if (!coin || isNaN(entry) || isNaN(tp1) || isNaN(tp2) || isNaN(tp3)) {
+                alert('Vui lòng nhập đầy đủ thông tin!');
+                return;
+            }
+
+            const newCoin = {
+                coin,
+                entry,
+                tp1, tp2, tp3,
+                side,
+                time: new Date().toLocaleString('vi-VN'),
+                timestamp: Date.now(),
+                hitTP1: false,
+                hitTP2: false,
+                hitTP3: false
+            };
+
+            coinsRef.push(newCoin)
+                .then(() => {
+                    alert('✅ Đã lưu nhận định thành công!');
+                    // Reset form
+                    ['coin','entry','tp1','tp2','tp3'].forEach(id => document.getElementById(id).value = '');
+                })
+                .catch(err => {
+                    alert('Lỗi: ' + err.message);
+                });
+        }
+    </script>
+</body>
+</html>
