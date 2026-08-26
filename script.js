@@ -101,4 +101,83 @@ async function updateAllPrices() {
 }
 
 function renderList() {
-    let list = document.getElementById('
+    let list = document.getElementById('coinList');
+    let filtered = [...coins];
+
+    if (currentFilter === 'today') {
+        let today = new Date().toDateString();
+        filtered = coins.filter(c => new Date(c.timestamp).toDateString() === today);
+    } else if (currentFilter === 'hit') {
+        filtered = coins.filter(c => c.hitTP1 || c.hitTP2 || c.hitTP3);
+    } else if (currentFilter === 'pending') {
+        filtered = coins.filter(c => !c.hitTP1 && !c.hitTP2 && !c.hitTP3);
+    }
+
+    if (filtered.length === 0) {
+        list.innerHTML = '<div class="empty">Chưa có nhận định nào</div>';
+        return;
+    }
+
+    let html = '';
+    filtered.forEach(c => {
+        let current = priceCache[c.coin];
+        let currentHtml = '';
+
+        if (current === undefined) {
+            currentHtml = '<span style="color:#888">...</span>';
+        } else if (current === null) {
+            currentHtml = '<span style="color:#ff5252">N/A</span>';
+        } else {
+            let isUp = current >= c.entry;
+            currentHtml = '<span class="current-price ' + (isUp ? 'up' : 'down') + '">$' + current.toLocaleString(undefined,{maximumFractionDigits:6}) + '</span>';
+        }
+
+        let hasHit = c.hitTP1 || c.hitTP2 || c.hitTP3;
+        let sideClass = c.side === 'LONG' ? 'side-long' : 'side-short';
+
+        html += '<div class="coin-card ' + (hasHit ? 'has-hit' : '') + '">';
+        
+        html += '<div class="card-top">';
+        html += '<div class="coin-info">';
+        html += '<span class="coin-name">' + c.coin + '</span>';
+        html += '<span class="side-badge ' + sideClass + '">' + c.side + '</span>';
+        html += '</div>';
+        html += '<div class="time">' + c.time + '</div>';
+        html += '</div>';
+
+        html += '<div class="card-bottom">';
+        html += '<div class="price-box"><div class="label">Entry</div><div class="value">$' + c.entry.toLocaleString() + '</div></div>';
+        html += '<div class="price-box"><div class="label">Now</div><div class="value">' + currentHtml + '</div></div>';
+        html += '<div class="price-box"><div class="label">TP1</div><div class="value">$' + c.tp1.toLocaleString() + '</div></div>';
+        html += '<div class="price-box"><div class="label">TP2</div><div class="value">$' + c.tp2.toLocaleString() + '</div></div>';
+        html += '<div class="price-box"><div class="label">TP3</div><div class="value">$' + c.tp3.toLocaleString() + '</div></div>';
+        
+        html += '<div class="tp-status">';
+        html += '<div class="tp-badge ' + (c.hitTP1 ? 'hit' : '') + '">TP1 ' + (c.hitTP1 ? '✓' : '○') + '</div>';
+        html += '<div class="tp-badge ' + (c.hitTP2 ? 'hit' : '') + '">TP2 ' + (c.hitTP2 ? '✓' : '○') + '</div>';
+        html += '<div class="tp-badge ' + (c.hitTP3 ? 'hit' : '') + '">TP3 ' + (c.hitTP3 ? '✓' : '○') + '</div>';
+        html += '</div>';
+        html += '</div>';
+
+        html += '</div>';
+    });
+
+    list.innerHTML = html;
+}
+
+function updateStats() {
+    document.getElementById('total').textContent = coins.length;
+    document.getElementById('tp1Count').textContent = coins.filter(c => c.hitTP1).length;
+    document.getElementById('tp2Count').textContent = coins.filter(c => c.hitTP2).length;
+    document.getElementById('tp3Count').textContent = coins.filter(c => c.hitTP3).length;
+}
+
+function filterList(type) {
+    currentFilter = type;
+    document.querySelectorAll('.filter button').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    renderList();
+}
+
+setInterval(updateAllPrices, 30000);
+updateAllPrices();
