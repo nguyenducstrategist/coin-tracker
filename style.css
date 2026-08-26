@@ -9,18 +9,18 @@ body {
     background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
     color: #fff;
     min-height: 100vh;
-    padding: 10px;
+    padding: 12px;
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1100px;
     margin: 0 auto;
 }
 
 h1 {
     text-align: center;
-    margin-bottom: 2px;
-    font-size: 1.5rem;
+    margin-bottom: 4px;
+    font-size: 1.6rem;
     background: linear-gradient(90deg, #00d2ff, #3a7bd5);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -30,13 +30,13 @@ h1 {
     text-align: center;
     color: #aaa;
     margin-bottom: 6px;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
 }
 
 .x-link {
     text-align: center;
-    margin-bottom: 12px;
-    font-size: 0.85rem;
+    margin-bottom: 14px;
+    font-size: 0.88rem;
 }
 
 .x-link a {
@@ -47,29 +47,29 @@ h1 {
 
 .stats {
     display: flex;
-    gap: 6px;
-    margin-bottom: 10px;
+    gap: 8px;
+    margin-bottom: 12px;
     flex-wrap: wrap;
 }
 
 .stat-box {
     flex: 1;
-    min-width: 80px;
+    min-width: 90px;
     background: rgba(255,255,255,0.08);
-    border-radius: 8px;
-    padding: 6px;
+    border-radius: 10px;
+    padding: 8px;
     text-align: center;
     border: 1px solid rgba(255,255,255,0.1);
 }
 
 .stat-box .number {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: bold;
     color: #00d2ff;
 }
 
 .stat-box .label {
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     color: #aaa;
 }
 
@@ -77,23 +77,23 @@ h1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
 }
 
 .filter {
     display: flex;
-    gap: 4px;
+    gap: 5px;
     flex-wrap: wrap;
 }
 
 .filter button {
     background: rgba(255,255,255,0.1);
-    padding: 4px 10px;
-    font-size: 0.75rem;
+    padding: 5px 12px;
+    font-size: 0.78rem;
     border: none;
-    border-radius: 6px;
+    border-radius: 7px;
     color: white;
     cursor: pointer;
 }
@@ -104,10 +104,10 @@ h1 {
 
 .refresh-btn {
     background: #00c853 !important;
-    padding: 4px 12px;
-    font-size: 0.75rem;
+    padding: 5px 14px;
+    font-size: 0.78rem;
     border: none;
-    border-radius: 6px;
+    border-radius: 7px;
     color: white;
     cursor: pointer;
 }
@@ -115,14 +115,21 @@ h1 {
 .coin-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
 }
 
 .coin-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
     background: rgba(255,255,255,0.07);
-    border-radius: 6px;
-    padding: 6px 12px;
-    border: 1px solid rgba(255,255,255,0.1
+    border-radius: 10px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.coin-card.has-hit {
+    border-color: #00ff88;
+    background: rgba(0,255,136,0.08);
+}
+
+.card-top {
+    display: flex;
+    justify
