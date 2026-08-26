@@ -3,11 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Top Coin Alpha</title>
+    <title>Admin - Nhận định Coin</title>
     <link rel="stylesheet" href="style.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        .login-box {
+            max-width: 400px;
+            margin: 100px auto;
+            background: rgba(255,255,255,0.08);
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .login-box input {
+            width: 100%;
+            margin: 15px 0;
+            padding: 12px;
+        }
+        #adminContent { display: none; }
+    </style>
 </head>
 <body>
     <div class="login-box" id="loginBox">
@@ -18,7 +35,7 @@
         <p id="error" style="color:#ff5252; margin-top:10px; display:none;">Sai mật khẩu!</p>
     </div>
 
-    <div class="container" id="adminContent" style="display:none;">
+    <div class="container" id="adminContent">
         <h1>📥 Thêm Nhận định</h1>
         <p class="subtitle">Chỉ bạn mới vào được trang này</p>
 
@@ -63,7 +80,7 @@
     </div>
 
     <script>
-        const ADMIN_PASSWORD = "duc123";
+        const ADMIN_PASSWORD = "duc123";   // ← Đổi mật khẩu ở đây nếu muốn
 
         const firebaseConfig = {
           apiKey: "AIzaSyDKA8vVF_aSF-K6s5KYE_rvqfWczKcq58I",
