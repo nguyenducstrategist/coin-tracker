@@ -9,7 +9,7 @@ body {
     background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
     color: #fff;
     min-height: 100vh;
-    padding: 12px;
+    padding: 10px;
 }
 
 .container {
@@ -19,8 +19,8 @@ body {
 
 h1 {
     text-align: center;
-    margin-bottom: 4px;
-    font-size: 1.6rem;
+    margin-bottom: 2px;
+    font-size: 1.5rem;
     background: linear-gradient(90deg, #00d2ff, #3a7bd5);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -30,13 +30,13 @@ h1 {
     text-align: center;
     color: #aaa;
     margin-bottom: 6px;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
 }
 
 .x-link {
     text-align: center;
-    margin-bottom: 14px;
-    font-size: 0.88rem;
+    margin-bottom: 12px;
+    font-size: 0.85rem;
 }
 
 .x-link a {
@@ -45,225 +45,48 @@ h1 {
     font-weight: 600;
 }
 
-.x-link a:hover {
-    text-decoration: underline;
-}
-
 .stats {
     display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 6px;
+    margin-bottom: 10px;
     flex-wrap: wrap;
 }
 
 .stat-box {
     flex: 1;
-    min-width: 90px;
+    min-width: 80px;
     background: rgba(255,255,255,0.08);
     border-radius: 8px;
-    padding: 8px;
+    padding: 6px;
     text-align: center;
     border: 1px solid rgba(255,255,255,0.1);
 }
 
 .stat-box .number {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     font-weight: bold;
     color: #00d2ff;
 }
 
 .stat-box .label {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     color: #aaa;
-    margin-top: 1px;
 }
 
 .toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
 }
 
 .filter {
     display: flex;
-    gap: 5px;
+    gap: 4px;
     flex-wrap: wrap;
 }
 
 .filter button {
-    background: rgba(255,255,255,0.1);
-    padding: 5px 11px;
-    font-size: 0.78rem;
-    border: none;
-    border-radius: 7px;
-    color: white;
-    cursor: pointer;
-}
-
-.filter button.active {
-    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
-}
-
-.refresh-btn {
-    background: #00c853 !important;
-    padding: 5px 12px;
-    font-size: 0.78rem;
-    border: none;
-    border-radius: 7px;
-    color: white;
-    cursor: pointer;
-}
-
-.coin-list {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.coin-card {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(255,255,255,0.07);
-    border-radius: 8px;
-    padding: 7px 12px;
-    border: 1px solid rgba(255,255,255,0.1);
-    transition: 0.2s;
-    min-height: 42px;
-}
-
-.coin-card.has-hit {
-    border-color: #00ff88;
-    background: rgba(0,255,136,0.08);
-}
-
-.coin-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 110px;
-}
-
-.coin-name {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: #00d2ff;
-    min-width: 55px;
-}
-
-.side-badge {
-    padding: 2px 7px;
-    border-radius: 10px;
-    font-size: 0.68rem;
-    font-weight: 600;
-}
-
-.side-long {
-    background: rgba(0,255,136,0.2);
-    color: #00ff88;
-}
-
-.side-short {
-    background: rgba(255,82,82,0.2);
-    color: #ff5252;
-}
-
-.price-item {
-    display: flex;
-    flex-direction: column;
-    min-width: 70px;
-}
-
-.price-item .label {
-    font-size: 0.62rem;
-    color: #999;
-    line-height: 1;
-}
-
-.price-item .value {
-    font-size: 0.82rem;
-    font-weight: 600;
-    line-height: 1.2;
-}
-
-.tp-status {
-    display: flex;
-    gap: 4px;
-    margin-left: auto;
-}
-
-.tp-badge {
-    padding: 3px 8px;
-    border-radius: 10px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    background: rgba(255,255,255,0.08);
-    color: #bbb;
-}
-
-.tp-badge.hit {
-    background: rgba(0,255,136,0.25);
-    color: #00ff88;
-}
-
-.time {
-    font-size: 0.68rem;
-    color: #888;
-    min-width: 70px;
-    text-align: right;
-}
-
-.current-price {
-    font-weight: 700;
-}
-
-.current-price.up {
-    color: #00ff88;
-}
-
-.current-price.down {
-    color: #ff5252;
-}
-
-.empty {
-    text-align: center;
-    padding: 40px;
-    color: #666;
-    font-size: 1rem;
-}
-
-.loading {
-    text-align: center;
-    color: #00d2ff;
-    margin: 6px 0;
-    font-size: 0.82rem;
-    display: none;
-}
-
-@media (max-width: 700px) {
-    .coin-card {
-        flex-wrap: wrap;
-        gap: 6px;
-        padding: 8px 10px;
-    }
-    
-    .coin-info {
-        min-width: auto;
-        width: 100%;
-    }
-    
-    .price-item {
-        min-width: 60px;
-    }
-    
-    .tp-status {
-        margin-left: 0;
-    }
-    
-    .time {
-        width: 100%;
-        text-align: left;
-        margin-top: 2px;
+    background: rgba(
