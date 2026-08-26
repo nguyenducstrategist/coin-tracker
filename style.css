@@ -132,4 +132,118 @@ h1 {
 
 .card-top {
     display: flex;
-    justify
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.coin-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.coin-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #00d2ff;
+}
+
+.side-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.side-long {
+    background: rgba(0,255,136,0.2);
+    color: #00ff88;
+}
+
+.side-short {
+    background: rgba(255,82,82,0.2);
+    color: #ff5252;
+}
+
+.time {
+    font-size: 0.72rem;
+    color: #888;
+}
+
+.card-bottom {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.price-box {
+    display: flex;
+    flex-direction: column;
+    min-width: 70px;
+}
+
+.price-box .label {
+    font-size: 0.65rem;
+    color: #999;
+    margin-bottom: 1px;
+}
+
+.price-box .value {
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.current-price.up {
+    color: #00ff88;
+}
+
+.current-price.down {
+    color: #ff5252;
+}
+
+.tp-status {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.tp-badge {
+    padding: 3px 9px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: rgba(255,255,255,0.08);
+    color: #bbb;
+}
+
+.tp-badge.hit {
+    background: rgba(0,255,136,0.25);
+    color: #00ff88;
+}
+
+.empty {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.loading {
+    text-align: center;
+    color: #00d2ff;
+    margin: 6px 0;
+    font-size: 0.85rem;
+    display: none;
+}
+
+@media (max-width: 700px) {
+    .card-bottom {
+        gap: 8px;
+    }
+    .tp-status {
+        margin-left: 0;
+        width: 100%;
+        margin-top: 4px;
+    }
+}
