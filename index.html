@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Top Coin Alpha</title>
+    <title>Nhận định Coin Hàng ngày</title>
     <link rel="stylesheet" href="style.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -11,8 +11,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>📈 Top Coin Alpha tăng trưởng đột biến</h1>
-        <p class="subtitle">Cập nhật theo thời gian thực từng ngày • TP1 • TP2 • TP3 • Tự động lấy giá Binance • Minh bạch công khai</p>
+        <h1>📈 Nhận định Coin Hàng ngày</h1>
+        <p class="subtitle">TP1 • TP2 • TP3 • Tự động lấy giá Binance • Minh bạch công khai</p>
         
         <div class="x-link">
             Theo dõi nhận định trên X: 
@@ -45,4 +45,19 @@
         <div class="toolbar">
             <div class="filter">
                 <button class="active" onclick="filterList('all')">Tất cả</button>
-               
+                <button onclick="filterList('today')">Hôm nay</button>
+                <button onclick="filterList('hit')">Đã đạt TP</button>
+                <button onclick="filterList('pending')">Chưa đạt</button>
+            </div>
+            <div>
+                <button class="refresh-btn" onclick="updateAllPrices()">🔄 Cập nhật giá</button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">Đang lấy giá từ Binance...</div>
+        <div class="coin-list" id="coinList"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
