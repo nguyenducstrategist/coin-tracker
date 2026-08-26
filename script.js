@@ -116,9 +116,9 @@ function renderList() {
         let currentHtml = '';
 
         if (current === undefined) {
-            currentHtml = '<span style="color:#888">Đang tải...</span>';
+            currentHtml = '<span style="color:#888">...</span>';
         } else if (current === null) {
-            currentHtml = '<span style="color:#ff5252">Không tìm thấy</span>';
+            currentHtml = '<span style="color:#ff5252">N/A</span>';
         } else {
             let isUp = current >= c.entry;
             currentHtml = '<span class="current-price ' + (isUp ? 'up' : 'down') + '">$' + current.toLocaleString(undefined,{maximumFractionDigits:6}) + '</span>';
@@ -128,27 +128,30 @@ function renderList() {
         let sideClass = c.side === 'LONG' ? 'side-long' : 'side-short';
 
         html += '<div class="coin-card ' + (hasHit ? 'has-hit' : '') + '">';
-        html += '<div class="card-header">';
-        html += '<div style="display:flex;align-items:center;gap:12px;">';
+        
+        html += '<div class="coin-info">';
         html += '<div class="coin-name">' + c.coin + '</div>';
         html += '<span class="side-badge ' + sideClass + '">' + c.side + '</span>';
         html += '</div>';
-        html += '<div class="time">' + c.time + '</div>';
-        html += '</div>';
 
-        html += '<div class="prices-grid">';
-        html += '<div class="price-box"><div class="label">Vào lệnh</div><div class="value">$' + c.entry.toLocaleString() + '</div></div>';
-        html += '<div class="price-box"><div class="label">Giá hiện tại</div><div class="value">' + currentHtml + '</div></div>';
-        html += '<div class="price-box"><div class="label">TP1</div><div class="value">$' + c.tp1.toLocaleString() + '</div></div>';
-        html += '<div class="price-box"><div class="label">TP2</div><div class="value">$' + c.tp2.toLocaleString() + '</div></div>';
-        html += '<div class="price-box"><div class="label">TP3</div><div class="value">$' + c.tp3.toLocaleString() + '</div></div>';
-        html += '</div>';
+        html += '<div class="price-item"><div class="label">Entry</div><div class="value">$' + c.entry.toLocaleString() + '</div></div>';
+
+        html += '<div class="price-item"><div class="label">Hiện tại</div><div class="value">' + currentHtml + '</div></div>';
+
+        html += '<div class="price-item"><div class="label">TP1</div><div class="value">$' + c.tp1.toLocaleString() + '</div></div>';
+
+        html += '<div class="price-item"><div class="label">TP2</div><div class="value">$' + c.tp2.toLocaleString() + '</div></div>';
+
+        html += '<div class="price-item"><div class="label">TP3</div><div class="value">$' + c.tp3.toLocaleString() + '</div></div>';
 
         html += '<div class="tp-status">';
         html += '<div class="tp-badge ' + (c.hitTP1 ? 'hit' : '') + '">TP1 ' + (c.hitTP1 ? '✓' : '○') + '</div>';
         html += '<div class="tp-badge ' + (c.hitTP2 ? 'hit' : '') + '">TP2 ' + (c.hitTP2 ? '✓' : '○') + '</div>';
         html += '<div class="tp-badge ' + (c.hitTP3 ? 'hit' : '') + '">TP3 ' + (c.hitTP3 ? '✓' : '○') + '</div>';
         html += '</div>';
+
+        html += '<div class="time">' + c.time + '</div>';
+
         html += '</div>';
     });
 
