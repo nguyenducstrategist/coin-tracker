@@ -37,27 +37,21 @@ async function fetchWithProxy(url) {
 }
 
 async function fetchPrice(symbol) {
-    // 1. Binance Spot
     let data = await fetchWithProxy('https://api.binance.com/api/v3/ticker/price?symbol=' + symbol + 'USDT');
     if (data && data.price) return parseFloat(data.price);
 
-    // 2. Binance Futures
     data = await fetchWithProxy('https://fapi.binance.com/fapi/v1/ticker/price?symbol=' + symbol + 'USDT');
     if (data && data.price) return parseFloat(data.price);
 
-    // 3. KuCoin
     data = await fetchWithProxy('https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=' + symbol + '-USDT');
     if (data && data.data && data.data.price) return parseFloat(data.data.price);
 
-    // 4. Bitget
     data = await fetchWithProxy('https://api.bitget.com/api/v2/spot/market/tickers?symbol=' + symbol + 'USDT');
     if (data && data.data && data.data[0] && data.data[0].lastPr) return parseFloat(data.data[0].lastPr);
 
-    // 5. MEXC
     data = await fetchWithProxy('https://api.mexc.com/api/v3/ticker/price?symbol=' + symbol + 'USDT');
     if (data && data.price) return parseFloat(data.price);
 
-    // 6. CoinGecko
     let id = symbol.toLowerCase();
     if (symbol === 'TMX') id = 'termmax';
     data = await fetchWithProxy('https://api.coingecko.com/api/v3/simple/price?ids=' + id + '&vs_currencies=usd');
