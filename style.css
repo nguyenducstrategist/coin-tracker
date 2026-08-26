@@ -19,20 +19,18 @@ body {
 
 h1 {
     text-align: center;
-    margin-bottom: 6px;
-    font-size: 1.6rem;
+    margin-bottom: 4px;
+    font-size: 1.7rem;
     background: linear-gradient(90deg, #00d2ff, #3a7bd5);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-clip: text;
 }
 
 .subtitle {
     text-align: center;
     color: #aaa;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     font-size: 0.85rem;
-    line-height: 1.4;
 }
 
 .x-link {
@@ -63,7 +61,7 @@ h1 {
     min-width: 100px;
     background: rgba(255,255,255,0.08);
     border-radius: 10px;
-    padding: 12px 8px;
+    padding: 10px;
     text-align: center;
     border: 1px solid rgba(255,255,255,0.1);
 }
@@ -77,14 +75,14 @@ h1 {
 .stat-box .label {
     font-size: 0.72rem;
     color: #aaa;
-    margin-top: 3px;
+    margin-top: 2px;
 }
 
 .toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
     flex-wrap: wrap;
     gap: 8px;
 }
@@ -97,17 +95,12 @@ h1 {
 
 .filter button {
     background: rgba(255,255,255,0.1);
-    padding: 7px 14px;
+    padding: 6px 12px;
     font-size: 0.8rem;
     border: none;
     border-radius: 8px;
     color: white;
     cursor: pointer;
-    transition: 0.2s;
-}
-
-.filter button:hover {
-    background: rgba(255,255,255,0.18);
 }
 
 .filter button.active {
@@ -116,36 +109,26 @@ h1 {
 
 .refresh-btn {
     background: #00c853 !important;
-    padding: 7px 16px;
+    padding: 6px 14px;
     font-size: 0.8rem;
     border: none;
     border-radius: 8px;
     color: white;
     cursor: pointer;
-    font-weight: 600;
-}
-
-.refresh-btn:hover {
-    background: #00e676 !important;
 }
 
 .coin-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
 }
 
 .coin-card {
     background: rgba(255,255,255,0.07);
     border-radius: 12px;
-    padding: 14px;
+    padding: 12px 14px;
     border: 1px solid rgba(255,255,255,0.1);
     transition: 0.25s;
-}
-
-.coin-card:hover {
-    transform: translateY(-2px);
-    border-color: rgba(0,210,255,0.4);
 }
 
 .coin-card.has-hit {
@@ -157,17 +140,17 @@ h1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .coin-name {
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 700;
     color: #00d2ff;
 }
 
 .side-badge {
-    padding: 3px 10px;
+    padding: 3px 8px;
     border-radius: 12px;
     font-size: 0.72rem;
     font-weight: 600;
@@ -191,24 +174,24 @@ h1 {
 .prices-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: 6px;
+    margin-bottom: 8px;
 }
 
 .price-box {
     background: rgba(0,0,0,0.25);
     border-radius: 8px;
-    padding: 7px 9px;
+    padding: 6px 8px;
 }
 
 .price-box .label {
     font-size: 0.68rem;
     color: #999;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
 }
 
 .price-box .value {
-    font-size: 0.92rem;
+    font-size: 0.9rem;
     font-weight: 600;
 }
 
@@ -219,7 +202,7 @@ h1 {
 }
 
 .tp-badge {
-    padding: 4px 11px;
+    padding: 4px 10px;
     border-radius: 12px;
     font-size: 0.75rem;
     font-weight: 600;
@@ -246,120 +229,25 @@ h1 {
 
 .empty {
     text-align: center;
-    padding: 50px 20px;
+    padding: 40px;
     color: #666;
-    font-size: 1.05rem;
+    font-size: 1rem;
     grid-column: 1 / -1;
 }
 
 .loading {
     text-align: center;
     color: #00d2ff;
-    margin: 10px 0;
-    font-size: 0.9rem;
+    margin: 8px 0;
+    font-size: 0.85rem;
     display: none;
-}
-
-/* Form admin */
-.form-card {
-    background: rgba(255,255,255,0.07);
-    border-radius: 14px;
-    padding: 20px;
-    border: 1px solid rgba(255,255,255,0.1);
-    margin-top: 10px;
-}
-
-.form-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px;
-    align-items: end;
-}
-
-.form-row label {
-    display: block;
-    font-size: 0.78rem;
-    color: #aaa;
-    margin-bottom: 4px;
-}
-
-.form-row input,
-.form-row select {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.15);
-    background: rgba(0,0,0,0.3);
-    color: #fff;
-    font-size: 0.95rem;
-    outline: none;
-}
-
-.form-row input:focus,
-.form-row select:focus {
-    border-color: #00d2ff;
-}
-
-.form-row button {
-    width: 100%;
-    padding: 11px;
-    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 0.95rem;
-}
-
-.form-row button:hover {
-    opacity: 0.9;
-}
-
-.login-box {
-    max-width: 400px;
-    margin: 80px auto;
-    background: rgba(255,255,255,0.08);
-    padding: 30px;
-    border-radius: 16px;
-    text-align: center;
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.login-box input {
-    width: 100%;
-    margin: 12px 0;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.15);
-    background: rgba(0,0,0,0.3);
-    color: #fff;
-    font-size: 1rem;
-}
-
-.login-box button {
-    width: 100%;
-    padding: 12px;
-    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 1rem;
 }
 
 @media (max-width: 600px) {
     .coin-list {
         grid-template-columns: 1fr;
     }
-    h1 {
-        font-size: 1.35rem;
-    }
-    .stats {
-        gap: 8px;
-    }
-    .stat-box {
-        min-width: 80px;
+    .prices-grid {
+        grid-template-columns: 1fr 1fr;
     }
 }
