@@ -46,7 +46,7 @@ async function fetchPrice(symbol) {
         }
     } catch (e) {}
 
-    // 3. Bitget (qua proxy CORS)
+    // 3. Bitget (qua proxy)
     try {
         let url = 'https://api.bitget.com/api/v2/spot/market/tickers?symbol=' + symbol + 'USDT';
         let res = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
@@ -58,7 +58,7 @@ async function fetchPrice(symbol) {
         }
     } catch (e) {}
 
-    // 4. MEXC (qua proxy CORS)
+    // 4. MEXC (qua proxy)
     try {
         let url = 'https://api.mexc.com/api/v3/ticker/price?symbol=' + symbol + 'USDT';
         let res = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
@@ -68,7 +68,7 @@ async function fetchPrice(symbol) {
         }
     } catch (e) {}
 
-    // 5. CoinGecko fallback (cho một số coin phổ biến)
+    // 5. CoinGecko (đặc biệt cho TMX)
     try {
         let id = symbol.toLowerCase();
         if (symbol === 'TMX') id = 'termmax';
@@ -97,5 +97,4 @@ async function updateAllPrices() {
         if (price === null || price === undefined) return;
 
         let hitTP1 = c.hitTP1 || false;
-        let hitTP2 = c.hitTP2 || false;
-        let hitTP3 = c.hitTP3 || false
+        let hitTP
