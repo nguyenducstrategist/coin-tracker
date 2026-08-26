@@ -129,7 +129,7 @@ function renderList() {
 
         html += '<div class="coin-card ' + (hasHit ? 'has-hit' : '') + '">';
         html += '<div class="card-header">';
-        html += '<div style="display:flex;align-items:center;gap:10px;">';
+        html += '<div style="display:flex;align-items:center;gap:12px;">';
         html += '<div class="coin-name">' + c.coin + '</div>';
         html += '<span class="side-badge ' + sideClass + '">' + c.side + '</span>';
         html += '</div>';
@@ -137,11 +137,11 @@ function renderList() {
         html += '</div>';
 
         html += '<div class="prices-grid">';
-        html += '<div class="price-box"><div class="label">Vào lệnh</div><div class="value">$' + Number(c.entry).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
+        html += '<div class="price-box"><div class="label">Vào lệnh</div><div class="value">$' + c.entry.toLocaleString() + '</div></div>';
         html += '<div class="price-box"><div class="label">Giá hiện tại</div><div class="value">' + currentHtml + '</div></div>';
-        html += '<div class="price-box"><div class="label">TP1</div><div class="value">$' + Number(c.tp1).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
-        html += '<div class="price-box"><div class="label">TP2</div><div class="value">$' + Number(c.tp2).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
-        html += '<div class="price-box"><div class="label">TP3</div><div class="value">$' + Number(c.tp3).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
+        html += '<div class="price-box"><div class="label">TP1</div><div class="value">$' + c.tp1.toLocaleString() + '</div></div>';
+        html += '<div class="price-box"><div class="label">TP2</div><div class="value">$' + c.tp2.toLocaleString() + '</div></div>';
+        html += '<div class="price-box"><div class="label">TP3</div><div class="value">$' + c.tp3.toLocaleString() + '</div></div>';
         html += '</div>';
 
         html += '<div class="tp-status">';
@@ -165,9 +165,7 @@ function updateStats() {
 function filterList(type) {
     currentFilter = type;
     document.querySelectorAll('.filter button').forEach(btn => btn.classList.remove('active'));
-    if (event && event.target) {
-        event.target.classList.add('active');
-    }
+    event.target.classList.add('active');
     renderList();
 }
 
