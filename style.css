@@ -89,4 +89,149 @@ h1 {
 }
 
 .filter button {
-    background: rgba(
+    background: rgba(255,255,255,0.1);
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+}
+
+.filter button.active {
+    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+}
+
+.refresh-btn {
+    background: #00c853 !important;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+}
+
+/* ========== DANH SÁCH 1 DÒNG NGANG SIÊU GỌN ========== */
+.coin-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.coin-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 6px;
+    padding: 5px 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    height: 38px;          /* cao cố định siêu mỏng */
+    font-size: 0.78rem;
+}
+
+.coin-card.has-hit {
+    border-color: #00ff88;
+    background: rgba(0,255,136,0.1);
+}
+
+.coin-name {
+    font-weight: 700;
+    color: #00d2ff;
+    min-width: 48px;
+}
+
+.side-badge {
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    font-weight: 600;
+}
+
+.side-long {
+    background: rgba(0,255,136,0.25);
+    color: #00ff88;
+}
+
+.side-short {
+    background: rgba(255,82,82,0.25);
+    color: #ff5252;
+}
+
+.price {
+    white-space: nowrap;
+    min-width: 70px;
+}
+
+.price span {
+    color: #999;
+    font-size: 0.68rem;
+}
+
+.current-price.up {
+    color: #00ff88;
+    font-weight: 700;
+}
+
+.current-price.down {
+    color: #ff5252;
+    font-weight: 700;
+}
+
+.tp-status {
+    display: flex;
+    gap: 3px;
+    margin-left: auto;
+}
+
+.tp-badge {
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    background: rgba(255,255,255,0.08);
+    color: #bbb;
+}
+
+.tp-badge.hit {
+    background: rgba(0,255,136,0.3);
+    color: #00ff88;
+}
+
+.time {
+    font-size: 0.65rem;
+    color: #888;
+    min-width: 95px;
+    text-align: right;
+}
+
+.empty {
+    text-align: center;
+    padding: 30px;
+    color: #666;
+}
+
+.loading {
+    text-align: center;
+    color: #00d2ff;
+    margin: 4px 0;
+    font-size: 0.8rem;
+    display: none;
+}
+
+@media (max-width: 700px) {
+    .coin-card {
+        height: auto;
+        flex-wrap: wrap;
+        padding: 6px 8px;
+        gap: 4px;
+    }
+    .tp-status {
+        margin-left: 0;
+    }
+    .time {
+        width: 100%;
+        text-align: left;
+    }
+}
