@@ -128,28 +128,30 @@ function renderList() {
         let sideClass = c.side === 'LONG' ? 'side-long' : 'side-short';
 
         html += '<div class="coin-card ' + (hasHit ? 'has-hit' : '') + '">';
-        
-        html += '<div class="coin-info">';
-        html += '<div class="coin-name">' + c.coin + '</div>';
+
+        // Coin + Side
+        html += '<span class="coin-name">' + c.coin + '</span>';
         html += '<span class="side-badge ' + sideClass + '">' + c.side + '</span>';
-        html += '</div>';
 
-        html += '<div class="price-item"><div class="label">Entry</div><div class="value">$' + c.entry.toLocaleString() + '</div></div>';
+        // Entry
+        html += '<div class="price"><span>Entry </span>$' + c.entry.toLocaleString() + '</div>';
 
-        html += '<div class="price-item"><div class="label">Hiện tại</div><div class="value">' + currentHtml + '</div></div>';
+        // Current
+        html += '<div class="price"><span>Now </span>' + currentHtml + '</div>';
 
-        html += '<div class="price-item"><div class="label">TP1</div><div class="value">$' + c.tp1.toLocaleString() + '</div></div>';
+        // TP1 TP2 TP3
+        html += '<div class="price"><span>TP1 </span>$' + c.tp1.toLocaleString() + '</div>';
+        html += '<div class="price"><span>TP2 </span>$' + c.tp2.toLocaleString() + '</div>';
+        html += '<div class="price"><span>TP3 </span>$' + c.tp3.toLocaleString() + '</div>';
 
-        html += '<div class="price-item"><div class="label">TP2</div><div class="value">$' + c.tp2.toLocaleString() + '</div></div>';
-
-        html += '<div class="price-item"><div class="label">TP3</div><div class="value">$' + c.tp3.toLocaleString() + '</div></div>';
-
+        // Status
         html += '<div class="tp-status">';
         html += '<div class="tp-badge ' + (c.hitTP1 ? 'hit' : '') + '">TP1 ' + (c.hitTP1 ? '✓' : '○') + '</div>';
         html += '<div class="tp-badge ' + (c.hitTP2 ? 'hit' : '') + '">TP2 ' + (c.hitTP2 ? '✓' : '○') + '</div>';
         html += '<div class="tp-badge ' + (c.hitTP3 ? 'hit' : '') + '">TP3 ' + (c.hitTP3 ? '✓' : '○') + '</div>';
         html += '</div>';
 
+        // Time
         html += '<div class="time">' + c.time + '</div>';
 
         html += '</div>';
