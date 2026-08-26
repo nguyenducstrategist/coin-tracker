@@ -1,0 +1,249 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    color: #fff;
+    min-height: 100vh;
+    padding: 12px;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 4px;
+    font-size: 1.6rem;
+    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    text-align: center;
+    color: #aaa;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
+}
+
+.x-link {
+    text-align: center;
+    margin-bottom: 14px;
+    font-size: 0.88rem;
+}
+
+.x-link a {
+    color: #1da1f2;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.stats {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.stat-box {
+    flex: 1;
+    min-width: 90px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 8px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.stat-box .number {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #00d2ff;
+}
+
+.stat-box .label {
+    font-size: 0.7rem;
+    color: #aaa;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.filter {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.filter button {
+    background: rgba(255,255,255,0.1);
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    border: none;
+    border-radius: 7px;
+    color: white;
+    cursor: pointer;
+}
+
+.filter button.active {
+    background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+}
+
+.refresh-btn {
+    background: #00c853 !important;
+    padding: 5px 14px;
+    font-size: 0.78rem;
+    border: none;
+    border-radius: 7px;
+    color: white;
+    cursor: pointer;
+}
+
+.coin-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.coin-card {
+    background: rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.coin-card.has-hit {
+    border-color: #00ff88;
+    background: rgba(0,255,136,0.08);
+}
+
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.coin-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.coin-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #00d2ff;
+}
+
+.side-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.side-long {
+    background: rgba(0,255,136,0.2);
+    color: #00ff88;
+}
+
+.side-short {
+    background: rgba(255,82,82,0.2);
+    color: #ff5252;
+}
+
+.time {
+    font-size: 0.72rem;
+    color: #888;
+}
+
+.card-bottom {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.price-box {
+    display: flex;
+    flex-direction: column;
+    min-width: 70px;
+}
+
+.price-box .label {
+    font-size: 0.65rem;
+    color: #999;
+    margin-bottom: 1px;
+}
+
+.price-box .value {
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.current-price.up {
+    color: #00ff88;
+}
+
+.current-price.down {
+    color: #ff5252;
+}
+
+.tp-status {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.tp-badge {
+    padding: 3px 9px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: rgba(255,255,255,0.08);
+    color: #bbb;
+}
+
+.tp-badge.hit {
+    background: rgba(0,255,136,0.25);
+    color: #00ff88;
+}
+
+.empty {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.loading {
+    text-align: center;
+    color: #00d2ff;
+    margin: 6px 0;
+    font-size: 0.85rem;
+    display: none;
+}
+
+@media (max-width: 700px) {
+    .card-bottom {
+        gap: 8px;
+    }
+    .tp-status {
+        margin-left: 0;
+        width: 100%;
+        margin-top: 4px;
+    }
+}

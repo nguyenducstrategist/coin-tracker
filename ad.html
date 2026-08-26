@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Nhận định Coin</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        .login-box {
+            max-width: 400px;
+            margin: 100px auto;
+            background: rgba(255,255,255,0.08);
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .login-box input {
+            width: 100%;
+            margin: 15px 0;
+            padding: 12px;
+        }
+        #adminContent { display: none; }
+        .form-card {
+            background: rgba(255,255,255,0.07);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: end;
+        }
+        .form-row > div {
+            flex: 1;
+            min-width: 110px;
+        }
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: white;
+        }
+        button {
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        #checkStatus {
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        .loai-manager {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .loai-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .loai-tag {
+            background: rgba(255,193,7,0.2);
+            color: #ffc107;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .loai-tag.active {
+            background: #ffc107;
+            color: #000;
+        }
+        .loai-tag .x {
+            color: #ff5252;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .admin-list {
+            margin-top: 25px;
+        }
+        .delete-btn {
+            background: #ff5252 !important;
+            padding: 5px 10px;
+            font-size: 0.75rem;
+        }
+        .loai-badge {
+            background: rgba(255,193,7,0.2);
+            color: #ffc107;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .hit-notifications {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 320px;
+        }
+        .hit-toast {
+            background: #00c853;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease;
+            font-weight: 600;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .hit-history {
+            background: rgba(0,255,136,0.08);
+            border: 1px solid rgba(0,255,136,0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 25px;
+        }
+        .hit-history h3 {
+            color: #00ff88;
+            margin-bottom: 12px;
+        }
+        .hit-item {
+            background: rgba(0,0,0,0.25);
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .hit-item .coin {
+            font-weight: 700;
+            color: #00d2ff;
+        }
+        .hit-item .tps {
+            display: flex;
+            gap: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box" id="loginBox">
+        <h2>🔒 Admin</h2>
+        <p style="color:#aaa; margin-bottom:15px;">Nhập mật khẩu để thêm nhận định</p>
+        <input type="password" id="password" placeholder="Mật khẩu..." onkeypress="if(event.key==='Enter') checkPassword()">
+        <button onclick="checkPassword()">Vào</button>
+        <p id="error" style="color:#ff5252; margin-top:10px; display:none;">Sai mật khẩu!</p>
+    </div>
+
+    <div class="container" id="adminContent">
+        <h1>📥 Thêm Nhận định</h1>
+        <p class="subtitle">Chỉ bạn mới vào được trang này</p>
+
+        <div class="form-card">
+            <div class="form-row">
+                <div>
+                    <label>COIN</label>
+                    <input type="text" id="coin" placeholder="BTC">
+                </div>
+                <div>
+                    <label>Giá vào lệnh</label>
+                    <input type="number" id="entry" step="any">
+                </div>
+                <div>
+                    <label>TP1</label>
+                    <input type="number" id="tp1" step="any">
+                </div>
+                <div>
+                    <label>TP2</label>
+                    <input type="number" id="tp2" step="any">
+                </div>
+                <div>
+                    <label>TP3</label>
+                    <input type="number" id="tp3" step="any">
+                </div>
+                <div>
+                    <label>Hướng</label>
+                    <select id="side">
+                        <option value="LONG">LONG</option>
+                        <option value="SHORT">SHORT</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Loại coin</label>
+                    <select id="loai"></select>
+                </div>
+                <div>
+                    <button onclick="addCoin()">+ Lưu</button>
+                </div>
+            </div>
+            <div id="checkStatus"></div>
+        </div>
+
+        <div class="loai-manager">
+            <h3>Quản lý Loại coin</h3>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <input type="text" id="newLoai" placeholder="Nhập loại mới (vd: SÓNG PUMP)" style="max-width:250px;">
+                <button onclick="addLoai()">Thêm loại</button>
+            </div>
+            <div class="loai-tags" id="loaiTags"></div>
+        </div>
+
+        <!-- Lịch sử đạt TP -->
+        <div class="hit-history">
+            <h3>📊 Lịch sử đạt TP (tất cả lần dính)</h3>
+            <div id="hitHistoryList"></div>
+        </div>
+
+        <div class="admin-list">
+            <h3 style="margin-bottom:12px;">Danh sách nhận định</h3>
+            <div id="adminCoinList"></div>
+        </div>
+
+        <p style="text-align:center; margin-top:30px;">
+            <a href="index.html" style="color:#00d2ff;">← Quay lại trang công khai</a>
+        </p>
+    </div>
+
+    <div class="hit-notifications" id="hitNotifications"></div>
+
+    <script>
+        const ADMIN_PASSWORD = "duc123";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDKA8vVF_aSF-K6s5KYE_rvqfWczKcq58I",
+          authDomain: "coin-tracker-eab72.firebaseapp.com",
+          databaseURL: "https://coin-tracker-eab72-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "coin-tracker-eab72",
+          storageBucket: "coin-tracker-eab72.firebasestorage.app",
+          messagingSenderId: "901455627673",
+          appId: "1:901455627673:web:d02f1a3495416a0cf87f08",
+          measurementId: "G-KZS11T7QXV"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const coinsRef = db.ref('coins');
+        const loaiRef = db.ref('loaiList');
+
+        let adminCoins = [];
+        let loaiList = ["SÓNG HỒI", "SÓNG FOMO", "BREAKOUT", "RETEST", "SCALP", "SWING", "KHÁC"];
+        let currentLoaiFilter = "all";
+        let previousHits = {};
+
+        function checkPassword() {
+            if (document.getElementById('password').value === ADMIN_PASSWORD) {
+                document.getElementById('loginBox').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+                loadData();
+            } else {
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        function showHitNotification(coin, tp) {
+            const div = document.getElementById('hitNotifications');
+            const toast = document.createElement('div');
+            toast.className = 'hit-toast';
+            toast.innerHTML = `🎯 <b>${coin}</b> đã đạt <b>${tp}</b>!`;
+            div.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 6000);
+        }
+
+        function loadData() {
+            loaiRef.on('value', snap => {
+                const data = snap.val();
+                if (data) loaiList = data;
+                else loaiRef.set(loaiList);
+                updateLoaiSelect();
+                renderLoaiTags();
+            });
+
+            coinsRef.on('value', snap => {
+                const data = snap.val() || {};
+                const newCoins = Object.keys(data).map(k => ({id: k, ...data[k]}))
+                    .sort((a,b) => b.timestamp - a.timestamp);
+
+                newCoins.forEach(c => {
+                    const prev = previousHits[c.id] || {};
+                    if (c.hitTP1 && !prev.hitTP1) showHitNotification(c.coin, 'TP1');
+                    if (c.hitTP2 && !prev.hitTP2) showHitNotification(c.coin, 'TP2');
+                    if (c.hitTP3 && !prev.hitTP3) showHitNotification(c.coin, 'TP3');
+                    previousHits[c.id] = {
+                        hitTP1: c.hitTP1,
+                        hitTP2: c.hitTP2,
+                        hitTP3: c.hitTP3
+                    };
+                });
+
+                adminCoins = newCoins;
+                renderAdminList();
+                renderHitHistory();
+            });
+        }
+
+        function renderHitHistory() {
+            const list = document.getElementById('hitHistoryList');
+            const hits = adminCoins.filter(c => c.hitTP1 || c.hitTP2 || c.hitTP3);
+
+            if (hits.length === 0) {
+                list.innerHTML = '<div style="color:#888; padding:10px;">Chưa có coin nào đạt TP</div>';
+                return;
+            }
+
+            let html = '';
+            hits.forEach(c => {
+                html += `
+                <div class="hit-item">
+                    <div>
+                        <span class="coin">${c.coin}</span>
+                        <span class="side-badge ${c.side==='LONG'?'side-long':'side-short'}" style="margin-left:8px;">${c.side}</span>
+                        <span class="loai-badge" style="margin-left:8px;">${c.loai || ''}</span>
+                    </div>
+                    <div class="tps">
+                        <div class="tp-badge ${c.hitTP1 ? 'hit' : ''}">TP1 ${c.hitTP1 ? '✓' : '○'}</div>
+                        <div class="tp-badge ${c.hitTP2 ? 'hit' : ''}">TP2 ${c.hitTP2 ? '✓' : '○'}</div>
+                        <div class="tp-badge ${c.hitTP3 ? 'hit' : ''}">TP3 ${c.hitTP3 ? '✓' : '○'}</div>
+                    </div>
+                </div>`;
+            });
+            list.innerHTML = html;
+        }
+
+        function updateLoaiSelect() {
+            const select = document.getElementById('loai');
+            select.innerHTML = loaiList.map(l => `<option value="${l}">${l}</option>`).join('');
+        }
+
+        function renderLoaiTags() {
+            const div = document.getElementById('loaiTags');
+            let html = `<div class="loai-tag ${currentLoaiFilter==='all'?'active':''}" onclick="filterByLoai('all')">Tất cả</div>`;
+            loaiList.forEach(l => {
+                html += `<div class="loai-tag ${currentLoaiFilter===l?'active':''}" onclick="filterByLoai('${l}')">
+                    ${l} <span class="x" onclick="event.stopPropagation(); deleteLoai('${l}')">×</span>
+                </div>`;
+            });
+            div.innerHTML = html;
+        }
+
+        function filterByLoai(loai) {
+            currentLoaiFilter = loai;
+            renderLoaiTags();
+            renderAdminList();
+        }
+
+        function addLoai() {
+            const val = document.getElementById('newLoai').value.trim().toUpperCase();
+            if (!val) return alert('Nhập tên loại!');
+            if (loaiList.includes(val)) return alert('Loại này đã có!');
+            loaiList.push(val);
+            loaiRef.set(loaiList);
+            document.getElementById('newLoai').value = '';
+        }
+
+        function deleteLoai(loai) {
+            if (!confirm('Xóa loại "' + loai + '"?')) return;
+            loaiList = loaiList.filter(l => l !== loai);
+            loaiRef.set(loaiList);
+            if (currentLoaiFilter === loai) currentLoaiFilter = 'all';
+        }
+
+        function renderAdminList() {
+            const list = document.getElementById('adminCoinList');
+            let filtered = currentLoaiFilter === 'all' 
+                ? adminCoins 
+                : adminCoins.filter(c => c.loai === currentLoaiFilter);
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="empty">Chưa có nhận định nào</div>';
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(c => {
+                html += `
+                <div class="coin-card ${ (c.hitTP1 || c.hitTP2 || c.hitTP3) ? 'has-hit' : '' }">
+                    <div class="card-top">
+                        <div class="coin-info">
+                            <span class="coin-name">${c.coin}</span>
+                            <span class="side-badge ${c.side==='LONG'?'side-long':'side-short'}">${c.side}</span>
+                            <span class="loai-badge">${c.loai || 'Chưa phân loại'}</span>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <span class="time">${c.time}</span>
+                            <button class="delete-btn" onclick="deleteCoin('${c.id}','${c.coin}')">Xóa</button>
+                        </div>
+                    </div>
+                    <div class="card-bottom">
+                        <div class="price-box"><div class="label">Entry</div><div class="value">$${c.entry}</div></div>
+                        <div class="price-box"><div class="label">TP1</div><div class="value">$${c.tp1}</div></div>
+                        <div class="price-box"><div class="label">TP2</div><div class="value">$${c.tp2}</div></div>
+                        <div class="price-box"><div class="label">TP3</div><div class="value">$${c.tp3}</div></div>
+                        
+                        <div class="tp-status">
+                            <div class="tp-badge ${c.hitTP1 ? 'hit' : ''}">TP1 ${c.hitTP1 ? '✓' : '○'}</div>
+                            <div class="tp-badge ${c.hitTP2 ? 'hit' : ''}">TP2 ${c.hitTP2 ? '✓' : '○'}</div>
+                            <div class="tp-badge ${c.hitTP3 ? 'hit' : ''}">TP3 ${c.hitTP3 ? '✓' : '○'}</div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            list.innerHTML = html;
+        }
+
+        function deleteCoin(id, name) {
+            if (confirm('Xóa ' + name + '?')) {
+                coinsRef.child(id).remove();
+            }
+        }
+
+        function addCoin() {
+            const coin = document.getElementById('coin').value.trim().toUpperCase();
+            const entry = parseFloat(document.getElementById('entry').value);
+            const tp1 = parseFloat(document.getElementById('tp1').value);
+            const tp2 = parseFloat(document.getElementById('tp2').value);
+            const tp3 = parseFloat(document.getElementById('tp3').value);
+            const side = document.getElementById('side').value;
+            const loai = document.getElementById('loai').value;
+            const status = document.getElementById('checkStatus');
+
+            if (!coin || isNaN(entry) || isNaN(tp1) || isNaN(tp2) || isNaN(tp3)) {
+                alert('Nhập đầy đủ thông tin!');
+                return;
+            }
+
+            status.innerHTML = '<span style="color:#00ff88">Đang lưu...</span>';
+
+            coinsRef.push({
+                coin, entry, tp1, tp2, tp3, side, loai,
+                time: new Date().toLocaleString('vi-VN'),
+                timestamp: Date.now(),
+                hitTP1: false, hitTP2: false, hitTP3: false
+            }).then(() => {
+                alert('Đã lưu thành công!');
+                status.innerHTML = '';
+                ['coin','entry','tp1','tp2','tp3'].forEach(id => document.getElementById(id).value = '');
+            }).catch(err => {
+                alert('Lỗi: ' + err.message);
+                status.innerHTML = '';
+            });
+        }
+    </script>
+</body>
+</html>
