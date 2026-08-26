@@ -46,9 +46,10 @@ async function fetchPrice(symbol) {
         }
     } catch (e) {}
 
-    // 3. Bitget (có nhiều coin Alpha)
+    // 3. Bitget (qua proxy CORS)
     try {
-        let res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers?symbol=' + symbol + 'USDT');
+        let url = 'https://api.bitget.com/api/v2/spot/market/tickers?symbol=' + symbol + 'USDT';
+        let res = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
         if (res.ok) {
             let data = await res.json();
             if (data.data && data.data[0] && data.data[0].lastPr) {
@@ -57,12 +58,24 @@ async function fetchPrice(symbol) {
         }
     } catch (e) {}
 
-    // 4. MEXC (có nhiều coin Alpha)
+    // 4. MEXC (qua proxy CORS)
     try {
-        let res = await fetch('https://api.mexc.com/api/v3/ticker/price?symbol=' + symbol + 'USDT');
+        let url = 'https://api.mexc.com/api/v3/ticker/price?symbol=' + symbol + 'USDT';
+        let res = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
         if (res.ok) {
             let data = await res.json();
             if (data.price) return parseFloat(data.price);
+        }
+    } catch (e) {}
+
+    // 5. CoinGecko fallback (cho một số coin phổ biến)
+    try {
+        let id = symbol.toLowerCase();
+        if (symbol === 'TMX') id = 'termmax';
+        let res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + id + '&vs_currencies=usd');
+        if (res.ok) {
+            let data = await res.json();
+            if (data[id] && data[id].usd) return parseFloat(data[id].usd);
         }
     } catch (e) {}
 
@@ -85,18 +98,4 @@ async function updateAllPrices() {
 
         let hitTP1 = c.hitTP1 || false;
         let hitTP2 = c.hitTP2 || false;
-        let hitTP3 = c.hitTP3 || false;
-
-        if (c.side === 'LONG') {
-            if (price >= c.tp1) hitTP1 = true;
-            if (price >= c.tp2) hitTP2 = true;
-            if (price >= c.tp3) hitTP3 = true;
-        } else {
-            if (price <= c.tp1) hitTP1 = true;
-            if (price <= c.tp2) hitTP2 = true;
-            if (price <= c.tp3) hitTP3 = true;
-        }
-
-        if (hitTP1 !== c.hitTP1 || hitTP2 !== c.hitTP2 || hitTP3 !== c.hitTP3) {
-            updates[c.id + '/hitTP1'] = hitTP1;
-            updates[c.id + '/hitTP2
+        let hitTP3 = c.hitTP3 || false
