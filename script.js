@@ -46,7 +46,18 @@ async function fetchPrice(symbol) {
         }
     } catch (e) {}
 
-    // 3. Bitget (qua proxy)
+    // 3. KuCoin (hoạt động tốt với TMX)
+    try {
+        let res = await fetch('https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=' + symbol + '-USDT');
+        if (res.ok) {
+            let data = await res.json();
+            if (data.data && data.data.price) {
+                return parseFloat(data.data.price);
+            }
+        }
+    } catch (e) {}
+
+    // 4. Bitget (qua proxy)
     try {
         let url = 'https://api.bitget.com/api/v2/spot/market/tickers?symbol=' + symbol + 'USDT';
         let res = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
@@ -58,43 +69,7 @@ async function fetchPrice(symbol) {
         }
     } catch (e) {}
 
-    // 4. MEXC (qua proxy)
+    // 5. MEXC (qua proxy)
     try {
         let url = 'https://api.mexc.com/api/v3/ticker/price?symbol=' + symbol + 'USDT';
-        let res = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
-        if (res.ok) {
-            let data = await res.json();
-            if (data.price) return parseFloat(data.price);
-        }
-    } catch (e) {}
-
-    // 5. CoinGecko (đặc biệt cho TMX)
-    try {
-        let id = symbol.toLowerCase();
-        if (symbol === 'TMX') id = 'termmax';
-        let res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + id + '&vs_currencies=usd');
-        if (res.ok) {
-            let data = await res.json();
-            if (data[id] && data[id].usd) return parseFloat(data[id].usd);
-        }
-    } catch (e) {}
-
-    return null;
-}
-
-async function updateAllPrices() {
-    if (coins.length === 0) return;
-    document.getElementById('loading').style.display = 'block';
-
-    let unique = [...new Set(coins.map(c => c.coin))];
-    await Promise.all(unique.map(async s => {
-        priceCache[s] = await fetchPrice(s);
-    }));
-
-    let updates = {};
-    coins.forEach(c => {
-        let price = priceCache[c.coin];
-        if (price === null || price === undefined) return;
-
-        let hitTP1 = c.hitTP1 || false;
-        let hitTP
+        let
