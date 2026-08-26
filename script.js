@@ -28,7 +28,6 @@ coinsRef.on('value', (snapshot) => {
 });
 
 async function fetchPrice(symbol) {
-    // Ưu tiên KuCoin (nhanh + có nhiều coin Alpha)
     try {
         let res = await fetch('https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=' + symbol + '-USDT');
         if (res.ok) {
@@ -37,7 +36,6 @@ async function fetchPrice(symbol) {
         }
     } catch (e) {}
 
-    // Binance Spot
     try {
         let res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + symbol + 'USDT');
         if (res.ok) {
@@ -46,7 +44,6 @@ async function fetchPrice(symbol) {
         }
     } catch (e) {}
 
-    // Binance Futures
     try {
         let res = await fetch('https://fapi.binance.com/fapi/v1/ticker/price?symbol=' + symbol + 'USDT');
         if (res.ok) {
@@ -60,11 +57,9 @@ async function fetchPrice(symbol) {
 
 async function updateAllPrices() {
     if (coins.length === 0) return;
-    
     document.getElementById('loading').style.display = 'block';
 
     let unique = [...new Set(coins.map(c => c.coin))];
-    
     for (let s of unique) {
         priceCache[s] = await fetchPrice(s);
     }
@@ -106,73 +101,4 @@ async function updateAllPrices() {
 }
 
 function renderList() {
-    let list = document.getElementById('coinList');
-    let filtered = [...coins];
-
-    if (currentFilter === 'today') {
-        let today = new Date().toDateString();
-        filtered = coins.filter(c => new Date(c.timestamp).toDateString() === today);
-    } else if (currentFilter === 'hit') {
-        filtered = coins.filter(c => c.hitTP1 || c.hitTP2 || c.hitTP3);
-    } else if (currentFilter === 'pending') {
-        filtered = coins.filter(c => !c.hitTP1 && !c.hitTP2 && !c.hitTP3);
-    }
-
-    if (filtered.length === 0) {
-        list.innerHTML = '<div class="empty">Chưa có nhận định nào</div>';
-        return;
-    }
-
-    let html = '';
-    filtered.forEach(c => {
-        let current = priceCache[c.coin];
-        let currentHtml = '';
-
-        if (current === undefined) {
-            currentHtml = '<span style="color:#888">...</span>';
-        } else if (current === null) {
-            currentHtml = '<span style="color:#ff5252">N/A</span>';
-        } else {
-            let isUp = current >= c.entry;
-            currentHtml = '<span class="current-price ' + (isUp ? 'up' : 'down') + '">$' + current.toLocaleString(undefined,{maximumFractionDigits:6}) + '</span>';
-        }
-
-        let hasHit = c.hitTP1 || c.hitTP2 || c.hitTP3;
-        let sideClass = c.side === 'LONG' ? 'side-long' : 'side-short';
-
-        html += '<div class="coin-card ' + (hasHit ? 'has-hit' : '') + '">';
-        html += '<span class="coin-name">' + c.coin + '</span>';
-        html += '<span class="side-badge ' + sideClass + '">' + c.side + '</span>';
-        html += '<div class="price"><span>Entry </span>$' + c.entry.toLocaleString() + '</div>';
-        html += '<div class="price"><span>Now </span>' + currentHtml + '</div>';
-        html += '<div class="price"><span>TP1 </span>$' + c.tp1.toLocaleString() + '</div>';
-        html += '<div class="price"><span>TP2 </span>$' + c.tp2.toLocaleString() + '</div>';
-        html += '<div class="price"><span>TP3 </span>$' + c.tp3.toLocaleString() + '</div>';
-        html += '<div class="tp-status">';
-        html += '<div class="tp-badge ' + (c.hitTP1 ? 'hit' : '') + '">TP1 ' + (c.hitTP1 ? '✓' : '○') + '</div>';
-        html += '<div class="tp-badge ' + (c.hitTP2 ? 'hit' : '') + '">TP2 ' + (c.hitTP2 ? '✓' : '○') + '</div>';
-        html += '<div class="tp-badge ' + (c.hitTP3 ? 'hit' : '') + '">TP3 ' + (c.hitTP3 ? '✓' : '○') + '</div>';
-        html += '</div>';
-        html += '<div class="time">' + c.time + '</div>';
-        html += '</div>';
-    });
-
-    list.innerHTML = html;
-}
-
-function updateStats() {
-    document.getElementById('total').textContent = coins.length;
-    document.getElementById('tp1Count').textContent = coins.filter(c => c.hitTP1).length;
-    document.getElementById('tp2Count').textContent = coins.filter(c => c.hitTP2).length;
-    document.getElementById('tp3Count').textContent = coins.filter(c => c.hitTP3).length;
-}
-
-function filterList(type) {
-    currentFilter = type;
-    document.querySelectorAll('.filter button').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-    renderList();
-}
-
-setInterval(updateAllPrices, 30000);
-updateAllPrices();
+    let list = document.getElementById('
