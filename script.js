@@ -28,26 +28,33 @@ coinsRef.on('value', (snapshot) => {
 });
 
 async function fetchPrice(symbol) {
-    // Đặc biệt cho TMX
-    if (symbol === 'TMX') {
+    // Coin Alpha / mới list: ưu tiên KuCoin + Bitget
+    if (symbol === 'DEBIT' || symbol === 'TMX') {
         try {
-            let res = await fetch('https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=TMX-USDT');
+            let res = await fetch('https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=' + symbol + '-USDT');
             if (res.ok) {
                 let data = await res.json();
                 if (data.data && data.data.price) return parseFloat(data.data.price);
             }
         } catch (e) {}
-        
+
         try {
-            let res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers?symbol=TMXUSDT');
+            let res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers?symbol=' + symbol + 'USDT');
             if (res.ok) {
                 let data = await res.json();
                 if (data.data && data.data[0] && data.data[0].lastPr) return parseFloat(data.data[0].lastPr);
             }
         } catch (e) {}
+
+        try {
+            let res = await fetch('https://api.mexc.com/api/v3/ticker/price?symbol=' + symbol + 'USDT');
+            if (res.ok) {
+                let data = await res.json();
+                if (data.price) return parseFloat(data.price);
+            }
+        } catch (e) {}
     }
 
-    // Các coin khác
     try {
         let res = await fetch('https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=' + symbol + '-USDT');
         if (res.ok) {
@@ -66,6 +73,22 @@ async function fetchPrice(symbol) {
 
     try {
         let res = await fetch('https://fapi.binance.com/fapi/v1/ticker/price?symbol=' + symbol + 'USDT');
+        if (res.ok) {
+            let data = await res.json();
+            if (data.price) return parseFloat(data.price);
+        }
+    } catch (e) {}
+
+    try {
+        let res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers?symbol=' + symbol + 'USDT');
+        if (res.ok) {
+            let data = await res.json();
+            if (data.data && data.data[0] && data.data[0].lastPr) return parseFloat(data.data[0].lastPr);
+        }
+    } catch (e) {}
+
+    try {
+        let res = await fetch('https://api.mexc.com/api/v3/ticker/price?symbol=' + symbol + 'USDT');
         if (res.ok) {
             let data = await res.json();
             if (data.price) return parseFloat(data.price);
