@@ -16,6 +16,8 @@ const coinsRef = db.ref('coins');
 let coins = [];
 let currentFilter = 'all';
 let priceCache = {};
+let alphaListCache = null;
+let notifyReady = false;
 
 coinsRef.on('value', (snapshot) => {
     const data = snapshot.val() || {};
@@ -27,109 +29,170 @@ coinsRef.on('value', (snapshot) => {
     updateStats();
 });
 
-async function fetchPrice(symbol) {
-    // Coin Alpha / mới list: ưu tiên KuCoin + Bitget
-    if (symbol === 'DEBIT' || symbol === 'TMX') {
-        try {
-            let res = await fetch('https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=' + symbol + '-USDT');
-            if (res.ok) {
-                let data = await res.json();
-                if (data.data && data.data.price) return parseFloat(data.data.price);
-            }
-        } catch (e) {}
+function askNotify() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+        notifyReady = true;
+        return;
+    }
+    if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(p => {
+            notifyReady = (p === 'granted');
+        });
+    }
+}
 
-        try {
-            let res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers?symbol=' + symbol + 'USDT');
-            if (res.ok) {
-                let data = await res.json();
-                if (data.data && data.data[0] && data.data[0].lastPr) return parseFloat(data.data[0].lastPr);
-            }
-        } catch (e) {}
+function showToast(text) {
+    let box = document.getElementById('hitToast');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'hitToast';
+        box.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;max-width:320px;background:#00c853;color:#fff;padding:12px 14px;border-radius:10px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:pre-line;';
+        document.body.appendChild(box);
+    }
+    box.textContent = text;
+    box.style.display = 'block';
+    setTimeout(() => { box.style.display = 'none'; }, 6000);
+}
 
+function notifyHit(title, body) {
+    showToast(title + '\n' + body);
+    if (notifyReady) {
+        try { new Notification(title, { body: body }); } catch (e) {}
+    }
+}
+
+async function fetchSpotOrFutures(symbol) {
+    const urls = [
+        'https://api.binance.com/api/v3/ticker/24hr?symbol=' + symbol + 'USDT',
+        'https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=' + symbol + 'USDT'
+    ];
+    for (const url of urls) {
         try {
-            let res = await fetch('https://api.mexc.com/api/v3/ticker/price?symbol=' + symbol + 'USDT');
-            if (res.ok) {
-                let data = await res.json();
-                if (data.price) return parseFloat(data.price);
+            const res = await fetch(url);
+            if (!res.ok) continue;
+            const d = await res.json();
+            const price = parseFloat(d.lastPrice);
+            const high = parseFloat(d.highPrice);
+            const low = parseFloat(d.lowPrice);
+            if (!isNaN(price)) {
+                return {
+                    price,
+                    high: isNaN(high) ? price : high,
+                    low: isNaN(low) ? price : low
+                };
             }
         } catch (e) {}
     }
+    return null;
+}
 
+async function getAlphaList() {
+    if (alphaListCache) return alphaListCache;
     try {
-        let res = await fetch('https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=' + symbol + '-USDT');
-        if (res.ok) {
-            let data = await res.json();
-            if (data.data && data.data.price) return parseFloat(data.data.price);
-        }
-    } catch (e) {}
+        const res = await fetch('https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list');
+        if (!res.ok) return null;
+        const d = await res.json();
+        alphaListCache = d.data || [];
+        return alphaListCache;
+    } catch (e) {
+        return null;
+    }
+}
 
+async function fetchAlpha(symbol) {
+    const list = await getAlphaList();
+    if (!list || !list.length) return null;
+    const item = list.find(t => (t.symbol || '').toUpperCase() === symbol);
+    if (!item) return null;
+    const price = parseFloat(item.price);
+    const high = parseFloat(item.priceHigh24h);
+    const low = parseFloat(item.priceLow24h);
+    if (isNaN(price)) return null;
+    return {
+        price,
+        high: isNaN(high) ? price : high,
+        low: isNaN(low) ? price : low
+    };
+}
+
+async function fetchDex(symbol) {
     try {
-        let res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + symbol + 'USDT');
-        if (res.ok) {
-            let data = await res.json();
-            if (data.price) return parseFloat(data.price);
-        }
-    } catch (e) {}
+        const res = await fetch('https://api.dexscreener.com/latest/dex/search?q=' + encodeURIComponent(symbol));
+        if (!res.ok) return null;
+        const d = await res.json();
+        const pairs = (d.pairs || []).filter(p =>
+            p.baseToken && p.baseToken.symbol && p.baseToken.symbol.toUpperCase() === symbol
+        );
+        if (!pairs.length) return null;
+        pairs.sort((a, b) => (b.liquidity && b.liquidity.usd ? b.liquidity.usd : 0) - (a.liquidity && a.liquidity.usd ? a.liquidity.usd : 0));
+        const p = pairs[0];
+        const price = parseFloat(p.priceUsd);
+        if (isNaN(price)) return null;
+        return { price, high: price, low: price };
+    } catch (e) {
+        return null;
+    }
+}
 
-    try {
-        let res = await fetch('https://fapi.binance.com/fapi/v1/ticker/price?symbol=' + symbol + 'USDT');
-        if (res.ok) {
-            let data = await res.json();
-            if (data.price) return parseFloat(data.price);
-        }
-    } catch (e) {}
-
-    try {
-        let res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers?symbol=' + symbol + 'USDT');
-        if (res.ok) {
-            let data = await res.json();
-            if (data.data && data.data[0] && data.data[0].lastPr) return parseFloat(data.data[0].lastPr);
-        }
-    } catch (e) {}
-
-    try {
-        let res = await fetch('https://api.mexc.com/api/v3/ticker/price?symbol=' + symbol + 'USDT');
-        if (res.ok) {
-            let data = await res.json();
-            if (data.price) return parseFloat(data.price);
-        }
-    } catch (e) {}
-
+async function fetchPriceData(symbol) {
+    let data = await fetchSpotOrFutures(symbol);
+    if (data) return data;
+    data = await fetchAlpha(symbol);
+    if (data) return data;
+    data = await fetchDex(symbol);
+    if (data) return data;
     return null;
 }
 
 async function updateAllPrices() {
     if (coins.length === 0) return;
-    document.getElementById('loading').style.display = 'block';
+    askNotify();
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'block';
 
-    let unique = [...new Set(coins.map(c => c.coin))];
-    for (let s of unique) {
-        priceCache[s] = await fetchPrice(s);
-    }
+    const unique = [...new Set(coins.map(c => c.coin))];
+    await Promise.all(unique.map(async s => {
+        priceCache[s] = await fetchPriceData(s);
+    }));
 
-    let updates = {};
+    const updates = {};
+    const newHits = [];
+
     coins.forEach(c => {
-        let price = priceCache[c.coin];
-        if (price === null || price === undefined) return;
+        const data = priceCache[c.coin];
+        if (!data || data.price === null || data.price === undefined) return;
+
+        const price = data.price;
+        const high = data.high != null ? data.high : price;
+        const low = data.low != null ? data.low : price;
 
         let hitTP1 = c.hitTP1 || false;
         let hitTP2 = c.hitTP2 || false;
         let hitTP3 = c.hitTP3 || false;
 
         if (c.side === 'LONG') {
-            if (price >= c.tp1) hitTP1 = true;
-            if (price >= c.tp2) hitTP2 = true;
-            if (price >= c.tp3) hitTP3 = true;
+            if (high >= c.tp1 || price >= c.tp1) hitTP1 = true;
+            if (high >= c.tp2 || price >= c.tp2) hitTP2 = true;
+            if (high >= c.tp3 || price >= c.tp3) hitTP3 = true;
         } else {
-            if (price <= c.tp1) hitTP1 = true;
-            if (price <= c.tp2) hitTP2 = true;
-            if (price <= c.tp3) hitTP3 = true;
+            if (low <= c.tp1 || price <= c.tp1) hitTP1 = true;
+            if (low <= c.tp2 || price <= c.tp2) hitTP2 = true;
+            if (low <= c.tp3 || price <= c.tp3) hitTP3 = true;
         }
 
         if (hitTP1 !== c.hitTP1 || hitTP2 !== c.hitTP2 || hitTP3 !== c.hitTP3) {
             updates[c.id + '/hitTP1'] = hitTP1;
             updates[c.id + '/hitTP2'] = hitTP2;
             updates[c.id + '/hitTP3'] = hitTP3;
+
+            const justHit = [];
+            if (hitTP1 && !c.hitTP1) justHit.push('TP1');
+            if (hitTP2 && !c.hitTP2) justHit.push('TP2');
+            if (hitTP3 && !c.hitTP3) justHit.push('TP3');
+            if (justHit.length) {
+                newHits.push(c.coin + ' ' + c.side + ' dính ' + justHit.join(', '));
+            }
         }
     });
 
@@ -137,18 +200,24 @@ async function updateAllPrices() {
         coinsRef.update(updates);
     }
 
+    if (newHits.length > 0) {
+        notifyHit('Đã dính target', newHits.join('\n'));
+    }
+
     renderList();
     updateStats();
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('vi-VN');
+    if (loading) loading.style.display = 'none';
+    const last = document.getElementById('lastUpdate');
+    if (last) last.textContent = new Date().toLocaleTimeString('vi-VN');
 }
 
 function renderList() {
-    let list = document.getElementById('coinList');
+    const list = document.getElementById('coinList');
+    if (!list) return;
     let filtered = [...coins];
 
     if (currentFilter === 'today') {
-        let today = new Date().toDateString();
+        const today = new Date().toDateString();
         filtered = coins.filter(c => new Date(c.timestamp).toDateString() === today);
     } else if (currentFilter === 'hit') {
         filtered = coins.filter(c => c.hitTP1 || c.hitTP2 || c.hitTP3);
@@ -163,45 +232,43 @@ function renderList() {
 
     let html = '';
     filtered.forEach(c => {
-        let current = priceCache[c.coin];
+        const data = priceCache[c.coin];
         let currentHtml = '';
 
-        if (current === undefined) {
-            currentHtml = '<span style="color:#888">...</span>';
-        } else if (current === null) {
-            currentHtml = '<span style="color:#ff5252">N/A</span>';
+        if (data === undefined) {
+            currentHtml = '<span style="color:#888">Đang tải...</span>';
+        } else if (!data || data.price === null || data.price === undefined) {
+            currentHtml = '<span style="color:#ff5252">Không tìm thấy</span>';
         } else {
-            let isUp = current >= c.entry;
-            currentHtml = '<span class="current-price ' + (isUp ? 'up' : 'down') + '">$' + current.toLocaleString(undefined,{maximumFractionDigits:6}) + '</span>';
+            const isUp = data.price >= c.entry;
+            currentHtml = '<span class="current-price ' + (isUp ? 'up' : 'down') + '">$' + data.price.toLocaleString(undefined,{maximumFractionDigits:6}) + '</span>';
         }
 
-        let hasHit = c.hitTP1 || c.hitTP2 || c.hitTP3;
-        let sideClass = c.side === 'LONG' ? 'side-long' : 'side-short';
+        const hasHit = c.hitTP1 || c.hitTP2 || c.hitTP3;
+        const sideClass = c.side === 'LONG' ? 'side-long' : 'side-short';
 
         html += '<div class="coin-card ' + (hasHit ? 'has-hit' : '') + '">';
-        
-        html += '<div class="card-top">';
-        html += '<div class="coin-info">';
-        html += '<span class="coin-name">' + c.coin + '</span>';
+        html += '<div class="card-header">';
+        html += '<div style="display:flex;align-items:center;gap:10px;">';
+        html += '<div class="coin-name">' + c.coin + '</div>';
         html += '<span class="side-badge ' + sideClass + '">' + c.side + '</span>';
         html += '</div>';
         html += '<div class="time">' + c.time + '</div>';
         html += '</div>';
 
-        html += '<div class="card-bottom">';
-        html += '<div class="price-box"><div class="label">Entry</div><div class="value">$' + c.entry.toLocaleString() + '</div></div>';
-        html += '<div class="price-box"><div class="label">Now</div><div class="value">' + currentHtml + '</div></div>';
-        html += '<div class="price-box"><div class="label">TP1</div><div class="value">$' + c.tp1.toLocaleString() + '</div></div>';
-        html += '<div class="price-box"><div class="label">TP2</div><div class="value">$' + c.tp2.toLocaleString() + '</div></div>';
-        html += '<div class="price-box"><div class="label">TP3</div><div class="value">$' + c.tp3.toLocaleString() + '</div></div>';
-        
+        html += '<div class="prices-grid">';
+        html += '<div class="price-box"><div class="label">Vào lệnh</div><div class="value">$' + Number(c.entry).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
+        html += '<div class="price-box"><div class="label">Giá hiện tại</div><div class="value">' + currentHtml + '</div></div>';
+        html += '<div class="price-box"><div class="label">TP1</div><div class="value">$' + Number(c.tp1).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
+        html += '<div class="price-box"><div class="label">TP2</div><div class="value">$' + Number(c.tp2).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
+        html += '<div class="price-box"><div class="label">TP3</div><div class="value">$' + Number(c.tp3).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
+        html += '</div>';
+
         html += '<div class="tp-status">';
         html += '<div class="tp-badge ' + (c.hitTP1 ? 'hit' : '') + '">TP1 ' + (c.hitTP1 ? '✓' : '○') + '</div>';
         html += '<div class="tp-badge ' + (c.hitTP2 ? 'hit' : '') + '">TP2 ' + (c.hitTP2 ? '✓' : '○') + '</div>';
         html += '<div class="tp-badge ' + (c.hitTP3 ? 'hit' : '') + '">TP3 ' + (c.hitTP3 ? '✓' : '○') + '</div>';
         html += '</div>';
-        html += '</div>';
-
         html += '</div>';
     });
 
@@ -209,18 +276,25 @@ function renderList() {
 }
 
 function updateStats() {
-    document.getElementById('total').textContent = coins.length;
-    document.getElementById('tp1Count').textContent = coins.filter(c => c.hitTP1).length;
-    document.getElementById('tp2Count').textContent = coins.filter(c => c.hitTP2).length;
-    document.getElementById('tp3Count').textContent = coins.filter(c => c.hitTP3).length;
+    const total = document.getElementById('total');
+    const tp1 = document.getElementById('tp1Count');
+    const tp2 = document.getElementById('tp2Count');
+    const tp3 = document.getElementById('tp3Count');
+    if (total) total.textContent = coins.length;
+    if (tp1) tp1.textContent = coins.filter(c => c.hitTP1).length;
+    if (tp2) tp2.textContent = coins.filter(c => c.hitTP2).length;
+    if (tp3) tp3.textContent = coins.filter(c => c.hitTP3).length;
 }
 
 function filterList(type) {
     currentFilter = type;
     document.querySelectorAll('.filter button').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+    if (typeof event !== 'undefined' && event && event.target) {
+        event.target.classList.add('active');
+    }
     renderList();
 }
 
+askNotify();
 setInterval(updateAllPrices, 30000);
 updateAllPrices();
