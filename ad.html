@@ -12,13 +12,14 @@
         .container{max-width:1200px;margin:0 auto}
         h1{text-align:center;margin-bottom:6px;font-size:1.6rem;background:linear-gradient(90deg,#00d2ff,#3a7bd5);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
         .subtitle{text-align:center;color:#aaa;margin-bottom:16px;font-size:.85rem}
-        .admin-list-title{margin:28px 0 12px;font-size:1.15rem;color:#00d2ff}
+        .admin-list-title{margin:28px 0 12px;font-size:1.15rem;color:#00d2ff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
         .login-box{max-width:400px;margin:80px auto;background:rgba(255,255,255,.08);padding:30px;border-radius:16px;text-align:center;border:1px solid rgba(255,255,255,.1)}
         .login-box input,.form-row input,.form-row select,.note-wrap textarea{width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);color:#fff;font-size:.95rem}
         .login-box input{margin:12px 0}
-        .login-box button,.save-btn,.cancel-btn{width:100%;padding:12px;border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer}
-        .login-box button,.save-btn{background:linear-gradient(90deg,#00d2ff,#3a7bd5);margin-top:14px}
-        .cancel-btn{background:#555;margin-top:8px;display:none}
+        .login-box button,.save-btn,.cancel-btn,.refresh-btn{padding:12px;border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer}
+        .login-box button,.save-btn{width:100%;background:linear-gradient(90deg,#00d2ff,#3a7bd5);margin-top:14px}
+        .cancel-btn{width:100%;background:#555;margin-top:8px;display:none}
+        .refresh-btn{background:#00c853;padding:8px 14px;font-size:.85rem}
         .form-card{background:rgba(255,255,255,.07);border-radius:14px;padding:20px;border:1px solid rgba(255,255,255,.1)}
         .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;align-items:end}
         .form-row label,.note-wrap label{display:block;font-size:.78rem;color:#aaa;margin-bottom:4px}
@@ -26,6 +27,8 @@
         .note-wrap textarea{min-height:110px;resize:vertical;font-family:inherit}
         .coin-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
         .coin-card{background:rgba(255,255,255,.07);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,.1)}
+        .coin-card.has-hit{border-color:#00ff88}
+        .coin-card.has-sl{border-color:#ff5252}
         .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
         .coin-name{font-size:1.2rem;font-weight:700;color:#00d2ff}
         .side-badge,.wave-badge{padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:600}
@@ -42,14 +45,17 @@
         .tp-badge{padding:4px 11px;border-radius:12px;font-size:.75rem;font-weight:600;background:rgba(255,255,255,.08);color:#bbb}
         .tp-badge.hit{background:rgba(0,255,136,.25);color:#00ff88}
         .tp-badge.sl-hit{background:rgba(255,82,82,.28);color:#ff5252}
-        .note-box{margin-top:10px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px}
-        .note-label{font-size:.68rem;color:#999;margin-bottom:4px}
-        .note-text{font-size:.82rem;color:#ddd;line-height:1.45}
+        .note-box,.hist-box{margin-top:10px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px}
+        .note-label,.hist-label{font-size:.68rem;color:#999;margin-bottom:4px}
+        .note-text,.hist-text{font-size:.82rem;color:#ddd;line-height:1.5}
+        .hist-ok{color:#00ff88}
+        .hist-sl{color:#ff8a80}
         .admin-actions{display:flex;gap:8px;margin-top:10px}
         .admin-actions button{flex:1;padding:8px;border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer}
         .btn-edit{background:#3a7bd5}
         .btn-del{background:#ff5252}
         .empty{text-align:center;padding:40px;color:#666;grid-column:1/-1}
+        .loading{text-align:center;color:#00d2ff;margin:8px 0;font-size:.85rem;display:none}
     </style>
 </head>
 <body>
@@ -99,7 +105,11 @@
             <button class="cancel-btn" id="cancelBtn" onclick="cancelEdit()">Hủy sửa</button>
         </div>
 
-        <h2 class="admin-list-title">Quản lý tất cả nhận định</h2>
+        <div class="admin-list-title">
+            <span>Quản lý tất cả nhận định</span>
+            <button class="refresh-btn" onclick="updateAllPrices()">🔄 Kiểm tra dính TP/SL</button>
+        </div>
+        <div id="loading" class="loading">Đang kiểm tra giá...</div>
         <div class="coin-list" id="adminList"></div>
         <p style="text-align:center;margin-top:30px;"><a href="index.html" style="color:#00d2ff;">← Quay lại trang công khai</a></p>
     </div>
@@ -120,14 +130,162 @@
         const coinsRef = firebase.database().ref('coins');
         let allCoins = [];
         let editingId = null;
+        let priceCache = {};
+        let alphaListCache = null;
+        let notifyReady = false;
+
+        function getWave(c){
+            return c.wave || c.song || c.loaiSong || c.loai || c.type || c.category || c.waveType || '';
+        }
+        function hasSL(c){
+            return c.sl!==undefined && c.sl!==null && c.sl!=='' && !isNaN(Number(c.sl));
+        }
+        function ensureWaveOption(val){
+            if(!val) return;
+            const sel=document.getElementById('wave');
+            if([...sel.options].some(o=>o.value===val)) return;
+            const opt=document.createElement('option');
+            opt.value=val; opt.textContent=val;
+            sel.appendChild(opt);
+        }
 
         function checkPassword(){
             if(document.getElementById('password').value===ADMIN_PASSWORD){
                 document.getElementById('loginBox').style.display='none';
                 document.getElementById('adminContent').style.display='block';
+                askNotify();
+                updateAllPrices();
             }else{
                 document.getElementById('error').style.display='block';
             }
+        }
+
+        function askNotify(){
+            if(!('Notification' in window)) return;
+            if(Notification.permission==='granted'){notifyReady=true;return;}
+            if(Notification.permission!=='denied'){
+                Notification.requestPermission().then(p=>{notifyReady=(p==='granted');});
+            }
+        }
+        function showToast(text,isSL){
+            let box=document.getElementById('hitToast');
+            if(!box){box=document.createElement('div');box.id='hitToast';document.body.appendChild(box);}
+            box.style.cssText='position:fixed;top:16px;right:16px;z-index:9999;max-width:340px;color:#fff;padding:12px 14px;border-radius:10px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:pre-line;';
+            box.style.background=isSL?'#ff5252':'#00c853';
+            box.textContent=text;
+            box.style.display='block';
+            setTimeout(()=>{box.style.display='none';},8000);
+        }
+        function notifyHit(title,body,isSL){
+            showToast(title+'\n'+body,isSL);
+            if(notifyReady){try{new Notification(title,{body:body});}catch(e){}}
+        }
+
+        async function fetchSpotOrFutures(symbol){
+            const urls=[
+                'https://api.binance.com/api/v3/ticker/24hr?symbol='+symbol+'USDT',
+                'https://fapi.binance.com/fapi/v1/ticker/24hr?symbol='+symbol+'USDT'
+            ];
+            for(const url of urls){
+                try{
+                    const res=await fetch(url);
+                    if(!res.ok) continue;
+                    const d=await res.json();
+                    const price=parseFloat(d.lastPrice);
+                    const high=parseFloat(d.highPrice);
+                    const low=parseFloat(d.lowPrice);
+                    if(!isNaN(price)) return {price, high:isNaN(high)?price:high, low:isNaN(low)?price:low};
+                }catch(e){}
+            }
+            return null;
+        }
+        async function getAlphaList(){
+            if(alphaListCache) return alphaListCache;
+            try{
+                const res=await fetch('https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list');
+                if(!res.ok) return null;
+                const d=await res.json();
+                alphaListCache=d.data||[];
+                return alphaListCache;
+            }catch(e){return null;}
+        }
+        async function fetchAlpha(symbol){
+            const list=await getAlphaList();
+            if(!list||!list.length) return null;
+            const item=list.find(t=>(t.symbol||'').toUpperCase()===symbol);
+            if(!item) return null;
+            const price=parseFloat(item.price);
+            const high=parseFloat(item.priceHigh24h);
+            const low=parseFloat(item.priceLow24h);
+            if(isNaN(price)) return null;
+            return {price, high:isNaN(high)?price:high, low:isNaN(low)?price:low};
+        }
+        async function fetchDex(symbol){
+            try{
+                const res=await fetch('https://api.dexscreener.com/latest/dex/search?q='+encodeURIComponent(symbol));
+                if(!res.ok) return null;
+                const d=await res.json();
+                const pairs=(d.pairs||[]).filter(p=>p.baseToken&&p.baseToken.symbol&&p.baseToken.symbol.toUpperCase()===symbol);
+                if(!pairs.length) return null;
+                pairs.sort((a,b)=>(b.liquidity&&b.liquidity.usd?b.liquidity.usd:0)-(a.liquidity&&a.liquidity.usd?a.liquidity.usd:0));
+                const price=parseFloat(pairs[0].priceUsd);
+                if(isNaN(price)) return null;
+                return {price,high:price,low:price};
+            }catch(e){return null;}
+        }
+        async function fetchPriceData(symbol){
+            return await fetchSpotOrFutures(symbol) || await fetchAlpha(symbol) || await fetchDex(symbol);
+        }
+
+        async function updateAllPrices(){
+            if(allCoins.length===0) return;
+            askNotify();
+            const loading=document.getElementById('loading');
+            if(loading) loading.style.display='block';
+            const unique=[...new Set(allCoins.map(c=>c.coin))];
+            await Promise.all(unique.map(async s=>{priceCache[s]=await fetchPriceData(s);}));
+
+            const updates={}; const newTPHits=[]; const newSLHits=[];
+            const nowText=new Date().toLocaleString('vi-VN');
+
+            allCoins.forEach(c=>{
+                const data=priceCache[c.coin];
+                if(!data||data.price==null) return;
+                const price=data.price, high=data.high!=null?data.high:price, low=data.low!=null?data.low:price;
+                let hitTP1=!!c.hitTP1, hitTP2=!!c.hitTP2, hitTP3=!!c.hitTP3, hitSL=!!c.hitSL;
+                if(c.side==='LONG'){
+                    if(high>=c.tp1||price>=c.tp1) hitTP1=true;
+                    if(high>=c.tp2||price>=c.tp2) hitTP2=true;
+                    if(high>=c.tp3||price>=c.tp3) hitTP3=true;
+                    if(hasSL(c)&&(low<=Number(c.sl)||price<=Number(c.sl))) hitSL=true;
+                }else{
+                    if(low<=c.tp1||price<=c.tp1) hitTP1=true;
+                    if(low<=c.tp2||price<=c.tp2) hitTP2=true;
+                    if(low<=c.tp3||price<=c.tp3) hitTP3=true;
+                    if(hasSL(c)&&(high>=Number(c.sl)||price>=Number(c.sl))) hitSL=true;
+                }
+                if(hitTP1!==!!c.hitTP1 || hitTP2!==!!c.hitTP2 || hitTP3!==!!c.hitTP3 || hitSL!==!!c.hitSL){
+                    updates[c.id+'/hitTP1']=hitTP1;
+                    updates[c.id+'/hitTP2']=hitTP2;
+                    updates[c.id+'/hitTP3']=hitTP3;
+                    updates[c.id+'/hitSL']=hitSL;
+                    const just=[];
+                    if(hitTP1 && !c.hitTP1){ just.push('TP1'); if(!c.hitTP1Time) updates[c.id+'/hitTP1Time']=nowText; }
+                    if(hitTP2 && !c.hitTP2){ just.push('TP2'); if(!c.hitTP2Time) updates[c.id+'/hitTP2Time']=nowText; }
+                    if(hitTP3 && !c.hitTP3){ just.push('TP3'); if(!c.hitTP3Time) updates[c.id+'/hitTP3Time']=nowText; }
+                    if(just.length) newTPHits.push(c.coin+' '+c.side+' dính '+just.join(', '));
+                    if(hitSL && !c.hitSL){
+                        if(!c.hitSLTime) updates[c.id+'/hitSLTime']=nowText;
+                        newSLHits.push(c.coin+' '+c.side+' dính STOPLOSS');
+                    }
+                }
+            });
+
+            if(Object.keys(updates).length) coinsRef.update(updates);
+            if(newSLHits.length) notifyHit('Dính Stoploss', newSLHits.join('\n'), true);
+            if(newTPHits.length) notifyHit('Đã dính target', newTPHits.join('\n'), false);
+            if(loading) loading.style.display='none';
+            renderAdminList();
         }
 
         function clearForm(){
@@ -135,7 +293,6 @@
             document.getElementById('side').value='LONG';
             document.getElementById('wave').value='';
         }
-
         function cancelEdit(){
             editingId=null;
             clearForm();
@@ -143,7 +300,6 @@
             document.getElementById('saveBtn').textContent='+ Lưu nhận định';
             document.getElementById('cancelBtn').style.display='none';
         }
-
         function saveCoin(){
             const coin=document.getElementById('coin').value.trim().toUpperCase();
             const entry=parseFloat(document.getElementById('entry').value);
@@ -183,11 +339,12 @@
                 }).catch(err=>alert('Lỗi: '+err.message));
             }
         }
-
         function editCoin(id){
             const c=allCoins.find(x=>x.id===id);
             if(!c) return;
             editingId=id;
+            const wave=getWave(c);
+            ensureWaveOption(wave);
             document.getElementById('coin').value=c.coin||'';
             document.getElementById('entry').value=c.entry||'';
             document.getElementById('sl').value=c.sl||'';
@@ -195,14 +352,13 @@
             document.getElementById('tp2').value=c.tp2||'';
             document.getElementById('tp3').value=c.tp3||'';
             document.getElementById('side').value=c.side||'LONG';
-            document.getElementById('wave').value=c.wave||'';
+            document.getElementById('wave').value=wave||'';
             document.getElementById('note').value=c.note||'';
             document.getElementById('formTitle').textContent='✏️ Sửa nhận định '+c.coin;
             document.getElementById('saveBtn').textContent='Lưu chỉnh sửa';
             document.getElementById('cancelBtn').style.display='block';
             window.scrollTo({top:0,behavior:'smooth'});
         }
-
         function deleteCoin(id,name){
             if(!confirm('Xóa nhận định '+name+' ?')) return;
             coinsRef.child(id).remove()
@@ -212,27 +368,30 @@
                 })
                 .catch(err=>alert('Lỗi: '+err.message));
         }
-
         function escapeHtml(text){
             return String(text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
         }
 
-        coinsRef.on('value', snapshot=>{
-            const data=snapshot.val()||{};
-            allCoins=Object.keys(data).map(key=>({id:key,...data[key]})).sort((a,b)=>b.timestamp-a.timestamp);
+        function renderAdminList(){
             const list=document.getElementById('adminList');
             if(!list) return;
             if(!allCoins.length){list.innerHTML='<div class="empty">Chưa có nhận định nào</div>';return;}
             let html='';
             allCoins.forEach(c=>{
-                const slText=(c.sl!==undefined&&c.sl!==null&&c.sl!=='')?'$'+Number(c.sl).toLocaleString(undefined,{maximumFractionDigits:6}):'--';
+                const slText=hasSL(c)?'$'+Number(c.sl).toLocaleString(undefined,{maximumFractionDigits:6}):'--';
                 const sideClass=c.side==='LONG'?'side-long':'side-short';
-                html+='<div class="coin-card"><div class="card-header"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+                const wave=getWave(c);
+                const data=priceCache[c.coin];
+                let current='--';
+                if(data&&data.price!=null) current='$'+data.price.toLocaleString(undefined,{maximumFractionDigits:6});
+                const cardClass=c.hitSL?'has-sl':((c.hitTP1||c.hitTP2||c.hitTP3)?'has-hit':'');
+                html+='<div class="coin-card '+cardClass+'"><div class="card-header"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
                 html+='<div class="coin-name">'+c.coin+'</div>';
                 html+='<span class="side-badge '+sideClass+'">'+c.side+'</span>';
-                if(c.wave) html+='<span class="wave-badge">'+c.wave+'</span>';
+                if(wave) html+='<span class="wave-badge">'+escapeHtml(wave)+'</span>';
                 html+='</div><div class="time">'+(c.time||'')+'</div></div><div class="prices-grid">';
                 html+='<div class="price-box"><div class="label">Vào lệnh</div><div class="value">$'+Number(c.entry).toLocaleString(undefined,{maximumFractionDigits:6})+'</div></div>';
+                html+='<div class="price-box"><div class="label">Giá hiện tại</div><div class="value">'+current+'</div></div>';
                 html+='<div class="price-box"><div class="label">Stoploss</div><div class="value sl-price">'+slText+'</div></div>';
                 html+='<div class="price-box"><div class="label">TP1</div><div class="value">$'+Number(c.tp1).toLocaleString(undefined,{maximumFractionDigits:6})+'</div></div>';
                 html+='<div class="price-box"><div class="label">TP2</div><div class="value">$'+Number(c.tp2).toLocaleString(undefined,{maximumFractionDigits:6})+'</div></div>';
@@ -242,6 +401,12 @@
                 html+='<div class="tp-badge '+(c.hitTP2?'hit':'')+'">TP2 '+(c.hitTP2?'✓':'○')+'</div>';
                 html+='<div class="tp-badge '+(c.hitTP3?'hit':'')+'">TP3 '+(c.hitTP3?'✓':'○')+'</div>';
                 html+='<div class="tp-badge '+(c.hitSL?'sl-hit':'')+'">SL '+(c.hitSL?'✓':'○')+'</div></div>';
+                html+='<div class="hist-box"><div class="hist-label">Lịch sử dính</div><div class="hist-text">';
+                html+='<div class="'+(c.hitTP1?'hist-ok':'')+'">TP1: '+(c.hitTP1?(c.hitTP1Time||'Đã dính'):'Chưa')+'</div>';
+                html+='<div class="'+(c.hitTP2?'hist-ok':'')+'">TP2: '+(c.hitTP2?(c.hitTP2Time||'Đã dính'):'Chưa')+'</div>';
+                html+='<div class="'+(c.hitTP3?'hist-ok':'')+'">TP3: '+(c.hitTP3?(c.hitTP3Time||'Đã dính'):'Chưa')+'</div>';
+                html+='<div class="'+(c.hitSL?'hist-sl':'')+'">SL: '+(c.hitSL?(c.hitSLTime||'Đã dính'):'Chưa')+'</div>';
+                html+='</div></div>';
                 if(c.note&&String(c.note).trim()!==''){
                     html+='<div class="note-box"><div class="note-label">Note</div><div class="note-text">'+escapeHtml(c.note)+'</div></div>';
                 }
@@ -251,7 +416,19 @@
                 html+='</div></div>';
             });
             list.innerHTML=html;
+        }
+
+        coinsRef.on('value', snapshot=>{
+            const data=snapshot.val()||{};
+            allCoins=Object.keys(data).map(key=>({id:key,...data[key]})).sort((a,b)=>b.timestamp-a.timestamp);
+            allCoins.forEach(c=>ensureWaveOption(getWave(c)));
+            renderAdminList();
         });
+
+        setInterval(()=>{
+            const box=document.getElementById('adminContent');
+            if(box && box.style.display!=='none') updateAllPrices();
+        },30000);
     </script>
 </body>
 </html>
