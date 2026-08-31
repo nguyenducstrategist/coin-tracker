@@ -135,6 +135,11 @@ h1 {
     background: rgba(0,255,136,0.08);
 }
 
+.coin-card.has-sl {
+    border-color: #ff5252;
+    background: rgba(255,82,82,0.08);
+}
+
 .card-header {
     display: flex;
     justify-content: space-between;
@@ -194,6 +199,10 @@ h1 {
     font-weight: 600;
 }
 
+.sl-price {
+    color: #ff8a80;
+}
+
 .tp-status {
     display: flex;
     gap: 6px;
@@ -212,6 +221,32 @@ h1 {
 .tp-badge.hit {
     background: rgba(0,255,136,0.25);
     color: #00ff88;
+}
+
+.tp-badge.sl-hit {
+    background: rgba(255,82,82,0.28);
+    color: #ff5252;
+}
+
+.note-box {
+    margin-top: 10px;
+    background: rgba(0,0,0,0.28);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.note-label {
+    font-size: 0.68rem;
+    color: #999;
+    margin-bottom: 4px;
+}
+
+.note-text {
+    font-size: 0.82rem;
+    color: #ddd;
+    line-height: 1.45;
+    white-space: normal;
 }
 
 .current-price {
@@ -257,7 +292,8 @@ h1 {
     align-items: end;
 }
 
-.form-row label {
+.form-row label,
+.note-wrap label {
     display: block;
     font-size: 0.78rem;
     color: #aaa;
@@ -266,7 +302,8 @@ h1 {
 
 .form-row input,
 .form-row select,
-.login-box input {
+.login-box input,
+.note-wrap textarea {
     width: 100%;
     padding: 10px 12px;
     border-radius: 8px;
@@ -276,9 +313,21 @@ h1 {
     font-size: 0.95rem;
 }
 
+.note-wrap {
+    margin-top: 14px;
+}
+
+.note-wrap textarea {
+    min-height: 110px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.save-btn,
 .form-row button,
 .login-box button {
     width: 100%;
+    margin-top: 14px;
     padding: 11px;
     background: linear-gradient(90deg, #00d2ff, #3a7bd5);
     border: none;
