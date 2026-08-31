@@ -19,33 +19,33 @@
 
     <div class="container" id="adminContent" style="display:none;">
         <h1>📥 Thêm Nhận định</h1>
-        <p class="subtitle">Chỉ bạn mới vào được trang này</p>
+        <p class="subtitle">Stoploss và Note chỉ hiện ở trang này</p>
 
         <div class="form-card">
             <div class="form-row">
                 <div>
                     <label>COIN</label>
-                    <input type="text" id="coin" placeholder="BTC" required>
+                    <input type="text" id="coin" placeholder="BTC">
                 </div>
                 <div>
                     <label>Giá vào lệnh</label>
-                    <input type="number" id="entry" placeholder="65000" step="any" required>
+                    <input type="number" id="entry" placeholder="65000" step="any">
                 </div>
                 <div>
                     <label>Stoploss</label>
-                    <input type="number" id="sl" placeholder="64000" step="any" required>
+                    <input type="number" id="sl" placeholder="64000" step="any">
                 </div>
                 <div>
                     <label>TP1</label>
-                    <input type="number" id="tp1" placeholder="66000" step="any" required>
+                    <input type="number" id="tp1" placeholder="66000" step="any">
                 </div>
                 <div>
                     <label>TP2</label>
-                    <input type="number" id="tp2" placeholder="67500" step="any" required>
+                    <input type="number" id="tp2" placeholder="67500" step="any">
                 </div>
                 <div>
                     <label>TP3</label>
-                    <input type="number" id="tp3" placeholder="69000" step="any" required>
+                    <input type="number" id="tp3" placeholder="69000" step="any">
                 </div>
                 <div>
                     <label>Hướng</label>
@@ -63,6 +63,9 @@
 
             <button class="save-btn" onclick="addCoin()">+ Lưu nhận định</button>
         </div>
+
+        <h2 class="admin-list-title">Lịch sử nhận định</h2>
+        <div class="coin-list" id="adminList"></div>
 
         <p style="text-align:center; margin-top:30px;">
             <a href="index.html" style="color:#00d2ff;">← Quay lại trang công khai</a>
@@ -136,6 +139,65 @@
                     alert('Lỗi: ' + err.message);
                 });
         }
+
+        function escapeHtml(text) {
+            return String(text || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/\n/g, '<br>');
+        }
+
+        coinsRef.on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            const coins = Object.keys(data).map(key => ({
+                id: key,
+                ...data[key]
+            })).sort((a, b) => b.timestamp - a.timestamp);
+
+            const list = document.getElementById('adminList');
+            if (!list) return;
+
+            if (coins.length === 0) {
+                list.innerHTML = '<div class="empty">Chưa có nhận định nào</div>';
+                return;
+            }
+
+            let html = '';
+            coins.forEach(c => {
+                const slText = (c.sl !== undefined && c.sl !== null && c.sl !== '')
+                    ? '$' + Number(c.sl).toLocaleString(undefined,{maximumFractionDigits:6})
+                    : '--';
+                const sideClass = c.side === 'LONG' ? 'side-long' : 'side-short';
+                html += '<div class="coin-card">';
+                html += '<div class="card-header">';
+                html += '<div style="display:flex;align-items:center;gap:10px;">';
+                html += '<div class="coin-name">' + c.coin + '</div>';
+                html += '<span class="side-badge ' + sideClass + '">' + c.side + '</span>';
+                html += '</div>';
+                html += '<div class="time">' + (c.time || '') + '</div>';
+                html += '</div>';
+                html += '<div class="prices-grid">';
+                html += '<div class="price-box"><div class="label">Vào lệnh</div><div class="value">$' + Number(c.entry).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
+                html += '<div class="price-box"><div class="label">Stoploss</div><div class="value sl-price">' + slText + '</div></div>';
+                html += '<div class="price-box"><div class="label">TP1</div><div class="value">$' + Number(c.tp1).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
+                html += '<div class="price-box"><div class="label">TP2</div><div class="value">$' + Number(c.tp2).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
+                html += '<div class="price-box"><div class="label">TP3</div><div class="value">$' + Number(c.tp3).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
+                html += '</div>';
+                html += '<div class="tp-status">';
+                html += '<div class="tp-badge ' + (c.hitTP1 ? 'hit' : '') + '">TP1 ' + (c.hitTP1 ? '✓' : '○') + '</div>';
+                html += '<div class="tp-badge ' + (c.hitTP2 ? 'hit' : '') + '">TP2 ' + (c.hitTP2 ? '✓' : '○') + '</div>';
+                html += '<div class="tp-badge ' + (c.hitTP3 ? 'hit' : '') + '">TP3 ' + (c.hitTP3 ? '✓' : '○') + '</div>';
+                html += '<div class="tp-badge ' + (c.hitSL ? 'sl-hit' : '') + '">SL ' + (c.hitSL ? '✓' : '○') + '</div>';
+                html += '</div>';
+                if (c.note && String(c.note).trim() !== '') {
+                    html += '<div class="note-box"><div class="note-label">Note</div><div class="note-text">' + escapeHtml(c.note) + '</div></div>';
+                }
+                html += '</div>';
+            });
+            list.innerHTML = html;
+        });
     </script>
 </body>
 </html>
