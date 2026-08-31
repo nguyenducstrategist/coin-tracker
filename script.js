@@ -42,21 +42,22 @@ function askNotify() {
     }
 }
 
-function showToast(text) {
+function showToast(text, isSL) {
     let box = document.getElementById('hitToast');
     if (!box) {
         box = document.createElement('div');
         box.id = 'hitToast';
-        box.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;max-width:320px;background:#00c853;color:#fff;padding:12px 14px;border-radius:10px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:pre-line;';
         document.body.appendChild(box);
     }
+    box.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;max-width:320px;color:#fff;padding:12px 14px;border-radius:10px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:pre-line;';
+    box.style.background = isSL ? '#ff5252' : '#00c853';
     box.textContent = text;
     box.style.display = 'block';
-    setTimeout(() => { box.style.display = 'none'; }, 6000);
+    setTimeout(() => { box.style.display = 'none'; }, 7000);
 }
 
-function notifyHit(title, body) {
-    showToast(title + '\n' + body);
+function notifyHit(title, body, isSL) {
+    showToast(title + '\n' + body, isSL);
     if (notifyReady) {
         try { new Notification(title, { body: body }); } catch (e) {}
     }
@@ -145,6 +146,19 @@ async function fetchPriceData(symbol) {
     return null;
 }
 
+function hasSL(c) {
+    return c.sl !== undefined && c.sl !== null && c.sl !== '' && !isNaN(Number(c.sl));
+}
+
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/\n/g, '<br>');
+}
+
 async function updateAllPrices() {
     if (coins.length === 0) return;
     askNotify();
@@ -157,7 +171,8 @@ async function updateAllPrices() {
     }));
 
     const updates = {};
-    const newHits = [];
+    const newTPHits = [];
+    const newSLHits = [];
 
     coins.forEach(c => {
         const data = priceCache[c.coin];
@@ -170,29 +185,32 @@ async function updateAllPrices() {
         let hitTP1 = c.hitTP1 || false;
         let hitTP2 = c.hitTP2 || false;
         let hitTP3 = c.hitTP3 || false;
+        let hitSL = c.hitSL || false;
 
         if (c.side === 'LONG') {
             if (high >= c.tp1 || price >= c.tp1) hitTP1 = true;
             if (high >= c.tp2 || price >= c.tp2) hitTP2 = true;
             if (high >= c.tp3 || price >= c.tp3) hitTP3 = true;
+            if (hasSL(c) && (low <= Number(c.sl) || price <= Number(c.sl))) hitSL = true;
         } else {
             if (low <= c.tp1 || price <= c.tp1) hitTP1 = true;
             if (low <= c.tp2 || price <= c.tp2) hitTP2 = true;
             if (low <= c.tp3 || price <= c.tp3) hitTP3 = true;
+            if (hasSL(c) && (high >= Number(c.sl) || price >= Number(c.sl))) hitSL = true;
         }
 
-        if (hitTP1 !== c.hitTP1 || hitTP2 !== c.hitTP2 || hitTP3 !== c.hitTP3) {
+        if (hitTP1 !== c.hitTP1 || hitTP2 !== c.hitTP2 || hitTP3 !== c.hitTP3 || hitSL !== !!c.hitSL) {
             updates[c.id + '/hitTP1'] = hitTP1;
             updates[c.id + '/hitTP2'] = hitTP2;
             updates[c.id + '/hitTP3'] = hitTP3;
+            updates[c.id + '/hitSL'] = hitSL;
 
             const justHit = [];
             if (hitTP1 && !c.hitTP1) justHit.push('TP1');
             if (hitTP2 && !c.hitTP2) justHit.push('TP2');
             if (hitTP3 && !c.hitTP3) justHit.push('TP3');
-            if (justHit.length) {
-                newHits.push(c.coin + ' ' + c.side + ' dính ' + justHit.join(', '));
-            }
+            if (justHit.length) newTPHits.push(c.coin + ' ' + c.side + ' dính ' + justHit.join(', '));
+            if (hitSL && !c.hitSL) newSLHits.push(c.coin + ' ' + c.side + ' dính STOPLOSS');
         }
     });
 
@@ -200,8 +218,11 @@ async function updateAllPrices() {
         coinsRef.update(updates);
     }
 
-    if (newHits.length > 0) {
-        notifyHit('Đã dính target', newHits.join('\n'));
+    if (newSLHits.length > 0) {
+        notifyHit('Dính Stoploss', newSLHits.join('\n'), true);
+    }
+    if (newTPHits.length > 0) {
+        notifyHit('Đã dính target', newTPHits.join('\n'), false);
     }
 
     renderList();
@@ -220,9 +241,9 @@ function renderList() {
         const today = new Date().toDateString();
         filtered = coins.filter(c => new Date(c.timestamp).toDateString() === today);
     } else if (currentFilter === 'hit') {
-        filtered = coins.filter(c => c.hitTP1 || c.hitTP2 || c.hitTP3);
+        filtered = coins.filter(c => c.hitTP1 || c.hitTP2 || c.hitTP3 || c.hitSL);
     } else if (currentFilter === 'pending') {
-        filtered = coins.filter(c => !c.hitTP1 && !c.hitTP2 && !c.hitTP3);
+        filtered = coins.filter(c => !c.hitTP1 && !c.hitTP2 && !c.hitTP3 && !c.hitSL);
     }
 
     if (filtered.length === 0) {
@@ -245,9 +266,11 @@ function renderList() {
         }
 
         const hasHit = c.hitTP1 || c.hitTP2 || c.hitTP3;
+        const slVal = hasSL(c) ? Number(c.sl).toLocaleString(undefined,{maximumFractionDigits:6}) : '--';
         const sideClass = c.side === 'LONG' ? 'side-long' : 'side-short';
+        const cardClass = c.hitSL ? 'has-sl' : (hasHit ? 'has-hit' : '');
 
-        html += '<div class="coin-card ' + (hasHit ? 'has-hit' : '') + '">';
+        html += '<div class="coin-card ' + cardClass + '">';
         html += '<div class="card-header">';
         html += '<div style="display:flex;align-items:center;gap:10px;">';
         html += '<div class="coin-name">' + c.coin + '</div>';
@@ -259,6 +282,7 @@ function renderList() {
         html += '<div class="prices-grid">';
         html += '<div class="price-box"><div class="label">Vào lệnh</div><div class="value">$' + Number(c.entry).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
         html += '<div class="price-box"><div class="label">Giá hiện tại</div><div class="value">' + currentHtml + '</div></div>';
+        html += '<div class="price-box"><div class="label">Stoploss</div><div class="value sl-price">$' + slVal + '</div></div>';
         html += '<div class="price-box"><div class="label">TP1</div><div class="value">$' + Number(c.tp1).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
         html += '<div class="price-box"><div class="label">TP2</div><div class="value">$' + Number(c.tp2).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
         html += '<div class="price-box"><div class="label">TP3</div><div class="value">$' + Number(c.tp3).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
@@ -268,7 +292,13 @@ function renderList() {
         html += '<div class="tp-badge ' + (c.hitTP1 ? 'hit' : '') + '">TP1 ' + (c.hitTP1 ? '✓' : '○') + '</div>';
         html += '<div class="tp-badge ' + (c.hitTP2 ? 'hit' : '') + '">TP2 ' + (c.hitTP2 ? '✓' : '○') + '</div>';
         html += '<div class="tp-badge ' + (c.hitTP3 ? 'hit' : '') + '">TP3 ' + (c.hitTP3 ? '✓' : '○') + '</div>';
+        html += '<div class="tp-badge ' + (c.hitSL ? 'sl-hit' : '') + '">SL ' + (c.hitSL ? '✓' : '○') + '</div>';
         html += '</div>';
+
+        if (c.note && String(c.note).trim() !== '') {
+            html += '<div class="note-box"><div class="note-label">Note</div><div class="note-text">' + escapeHtml(c.note) + '</div></div>';
+        }
+
         html += '</div>';
     });
 
