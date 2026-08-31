@@ -150,15 +150,6 @@ function hasSL(c) {
     return c.sl !== undefined && c.sl !== null && c.sl !== '' && !isNaN(Number(c.sl));
 }
 
-function escapeHtml(text) {
-    return String(text)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/\n/g, '<br>');
-}
-
 async function updateAllPrices() {
     if (coins.length === 0) return;
     askNotify();
@@ -241,9 +232,9 @@ function renderList() {
         const today = new Date().toDateString();
         filtered = coins.filter(c => new Date(c.timestamp).toDateString() === today);
     } else if (currentFilter === 'hit') {
-        filtered = coins.filter(c => c.hitTP1 || c.hitTP2 || c.hitTP3 || c.hitSL);
+        filtered = coins.filter(c => c.hitTP1 || c.hitTP2 || c.hitTP3);
     } else if (currentFilter === 'pending') {
-        filtered = coins.filter(c => !c.hitTP1 && !c.hitTP2 && !c.hitTP3 && !c.hitSL);
+        filtered = coins.filter(c => !c.hitTP1 && !c.hitTP2 && !c.hitTP3);
     }
 
     if (filtered.length === 0) {
@@ -266,11 +257,9 @@ function renderList() {
         }
 
         const hasHit = c.hitTP1 || c.hitTP2 || c.hitTP3;
-        const slVal = hasSL(c) ? Number(c.sl).toLocaleString(undefined,{maximumFractionDigits:6}) : '--';
         const sideClass = c.side === 'LONG' ? 'side-long' : 'side-short';
-        const cardClass = c.hitSL ? 'has-sl' : (hasHit ? 'has-hit' : '');
 
-        html += '<div class="coin-card ' + cardClass + '">';
+        html += '<div class="coin-card ' + (hasHit ? 'has-hit' : '') + '">';
         html += '<div class="card-header">';
         html += '<div style="display:flex;align-items:center;gap:10px;">';
         html += '<div class="coin-name">' + c.coin + '</div>';
@@ -282,7 +271,6 @@ function renderList() {
         html += '<div class="prices-grid">';
         html += '<div class="price-box"><div class="label">Vào lệnh</div><div class="value">$' + Number(c.entry).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
         html += '<div class="price-box"><div class="label">Giá hiện tại</div><div class="value">' + currentHtml + '</div></div>';
-        html += '<div class="price-box"><div class="label">Stoploss</div><div class="value sl-price">$' + slVal + '</div></div>';
         html += '<div class="price-box"><div class="label">TP1</div><div class="value">$' + Number(c.tp1).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
         html += '<div class="price-box"><div class="label">TP2</div><div class="value">$' + Number(c.tp2).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
         html += '<div class="price-box"><div class="label">TP3</div><div class="value">$' + Number(c.tp3).toLocaleString(undefined,{maximumFractionDigits:6}) + '</div></div>';
@@ -292,13 +280,7 @@ function renderList() {
         html += '<div class="tp-badge ' + (c.hitTP1 ? 'hit' : '') + '">TP1 ' + (c.hitTP1 ? '✓' : '○') + '</div>';
         html += '<div class="tp-badge ' + (c.hitTP2 ? 'hit' : '') + '">TP2 ' + (c.hitTP2 ? '✓' : '○') + '</div>';
         html += '<div class="tp-badge ' + (c.hitTP3 ? 'hit' : '') + '">TP3 ' + (c.hitTP3 ? '✓' : '○') + '</div>';
-        html += '<div class="tp-badge ' + (c.hitSL ? 'sl-hit' : '') + '">SL ' + (c.hitSL ? '✓' : '○') + '</div>';
         html += '</div>';
-
-        if (c.note && String(c.note).trim() !== '') {
-            html += '<div class="note-box"><div class="note-label">Note</div><div class="note-text">' + escapeHtml(c.note) + '</div></div>';
-        }
-
         html += '</div>';
     });
 
