@@ -16,20 +16,22 @@
         .login-box{max-width:400px;margin:80px auto;background:rgba(255,255,255,.08);padding:30px;border-radius:16px;text-align:center;border:1px solid rgba(255,255,255,.1)}
         .login-box input,.form-row input,.form-row select,.note-wrap textarea{width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);color:#fff;font-size:.95rem}
         .login-box input{margin:12px 0}
-        .login-box button,.save-btn{width:100%;padding:12px;background:linear-gradient(90deg,#00d2ff,#3a7bd5);border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer}
+        .login-box button,.save-btn,.cancel-btn{width:100%;padding:12px;border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer}
+        .login-box button,.save-btn{background:linear-gradient(90deg,#00d2ff,#3a7bd5);margin-top:14px}
+        .cancel-btn{background:#555;margin-top:8px;display:none}
         .form-card{background:rgba(255,255,255,.07);border-radius:14px;padding:20px;border:1px solid rgba(255,255,255,.1)}
         .form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;align-items:end}
         .form-row label,.note-wrap label{display:block;font-size:.78rem;color:#aaa;margin-bottom:4px}
         .note-wrap{margin-top:14px}
         .note-wrap textarea{min-height:110px;resize:vertical;font-family:inherit}
-        .save-btn{margin-top:14px}
         .coin-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
         .coin-card{background:rgba(255,255,255,.07);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,.1)}
         .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
         .coin-name{font-size:1.2rem;font-weight:700;color:#00d2ff}
-        .side-badge{padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:600}
+        .side-badge,.wave-badge{padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:600}
         .side-long{background:rgba(0,255,136,.2);color:#00ff88}
         .side-short{background:rgba(255,82,82,.2);color:#ff5252}
+        .wave-badge{background:rgba(0,210,255,.18);color:#7ad7ff}
         .time{font-size:.75rem;color:#aaa}
         .prices-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
         .price-box{background:rgba(0,0,0,.25);border-radius:8px;padding:7px 9px}
@@ -43,6 +45,10 @@
         .note-box{margin-top:10px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 10px}
         .note-label{font-size:.68rem;color:#999;margin-bottom:4px}
         .note-text{font-size:.82rem;color:#ddd;line-height:1.45}
+        .admin-actions{display:flex;gap:8px;margin-top:10px}
+        .admin-actions button{flex:1;padding:8px;border:none;border-radius:8px;color:#fff;font-weight:600;cursor:pointer}
+        .btn-edit{background:#3a7bd5}
+        .btn-del{background:#ff5252}
         .empty{text-align:center;padding:40px;color:#666;grid-column:1/-1}
     </style>
 </head>
@@ -56,8 +62,8 @@
     </div>
 
     <div class="container" id="adminContent" style="display:none;">
-        <h1>📥 Thêm Nhận định</h1>
-        <p class="subtitle">Stoploss và Note chỉ hiện ở trang Admin</p>
+        <h1 id="formTitle">📥 Thêm Nhận định</h1>
+        <p class="subtitle">Stoploss, Note và Chọn sóng chỉ có ở trang Admin</p>
         <div class="form-card">
             <div class="form-row">
                 <div><label>COIN</label><input type="text" id="coin" placeholder="BTC"></div>
@@ -73,15 +79,27 @@
                         <option value="SHORT">SHORT 📉</option>
                     </select>
                 </div>
+                <div>
+                    <label>Chọn sóng</label>
+                    <select id="wave">
+                        <option value="">-- Chọn sóng --</option>
+                        <option value="Sóng hồi">Sóng hồi</option>
+                        <option value="Sóng FOMO">Sóng FOMO</option>
+                        <option value="Sóng dump">Sóng dump</option>
+                        <option value="Sóng breakout">Sóng breakout</option>
+                        <option value="Sóng tích lũy">Sóng tích lũy</option>
+                    </select>
+                </div>
             </div>
             <div class="note-wrap">
                 <label>Note / Phân tích</label>
                 <textarea id="note" placeholder="Viết phân tích của bạn vào đây..."></textarea>
             </div>
-            <button class="save-btn" onclick="addCoin()">+ Lưu nhận định</button>
+            <button class="save-btn" id="saveBtn" onclick="saveCoin()">+ Lưu nhận định</button>
+            <button class="cancel-btn" id="cancelBtn" onclick="cancelEdit()">Hủy sửa</button>
         </div>
 
-        <h2 class="admin-list-title">Lịch sử nhận định</h2>
+        <h2 class="admin-list-title">Quản lý tất cả nhận định</h2>
         <div class="coin-list" id="adminList"></div>
         <p style="text-align:center;margin-top:30px;"><a href="index.html" style="color:#00d2ff;">← Quay lại trang công khai</a></p>
     </div>
@@ -100,6 +118,8 @@
         };
         firebase.initializeApp(firebaseConfig);
         const coinsRef = firebase.database().ref('coins');
+        let allCoins = [];
+        let editingId = null;
 
         function checkPassword(){
             if(document.getElementById('password').value===ADMIN_PASSWORD){
@@ -109,7 +129,22 @@
                 document.getElementById('error').style.display='block';
             }
         }
-        function addCoin(){
+
+        function clearForm(){
+            ['coin','entry','sl','tp1','tp2','tp3','note'].forEach(id=>document.getElementById(id).value='');
+            document.getElementById('side').value='LONG';
+            document.getElementById('wave').value='';
+        }
+
+        function cancelEdit(){
+            editingId=null;
+            clearForm();
+            document.getElementById('formTitle').textContent='📥 Thêm Nhận định';
+            document.getElementById('saveBtn').textContent='+ Lưu nhận định';
+            document.getElementById('cancelBtn').style.display='none';
+        }
+
+        function saveCoin(){
             const coin=document.getElementById('coin').value.trim().toUpperCase();
             const entry=parseFloat(document.getElementById('entry').value);
             const sl=parseFloat(document.getElementById('sl').value);
@@ -117,37 +152,86 @@
             const tp2=parseFloat(document.getElementById('tp2').value);
             const tp3=parseFloat(document.getElementById('tp3').value);
             const side=document.getElementById('side').value;
+            const wave=document.getElementById('wave').value;
             const note=document.getElementById('note').value.trim();
+
             if(!coin||isNaN(entry)||isNaN(sl)||isNaN(tp1)||isNaN(tp2)||isNaN(tp3)){
                 alert('Vui lòng nhập đầy đủ thông tin, gồm Stoploss!');
                 return;
             }
-            coinsRef.push({
-                coin,entry,sl,tp1,tp2,tp3,side,note,
-                time:new Date().toLocaleString('vi-VN'),
-                timestamp:Date.now(),
-                hitTP1:false,hitTP2:false,hitTP3:false,hitSL:false
-            }).then(()=>{
-                alert('✅ Đã lưu nhận định thành công!');
-                ['coin','entry','sl','tp1','tp2','tp3','note'].forEach(id=>document.getElementById(id).value='');
-            }).catch(err=>alert('Lỗi: '+err.message));
+            if(!wave){
+                alert('Vui lòng chọn sóng!');
+                return;
+            }
+
+            if(editingId){
+                coinsRef.child(editingId).update({
+                    coin,entry,sl,tp1,tp2,tp3,side,wave,note
+                }).then(()=>{
+                    alert('✅ Đã sửa thành công!');
+                    cancelEdit();
+                }).catch(err=>alert('Lỗi: '+err.message));
+            }else{
+                coinsRef.push({
+                    coin,entry,sl,tp1,tp2,tp3,side,wave,note,
+                    time:new Date().toLocaleString('vi-VN'),
+                    timestamp:Date.now(),
+                    hitTP1:false,hitTP2:false,hitTP3:false,hitSL:false
+                }).then(()=>{
+                    alert('✅ Đã lưu nhận định thành công!');
+                    clearForm();
+                }).catch(err=>alert('Lỗi: '+err.message));
+            }
         }
+
+        function editCoin(id){
+            const c=allCoins.find(x=>x.id===id);
+            if(!c) return;
+            editingId=id;
+            document.getElementById('coin').value=c.coin||'';
+            document.getElementById('entry').value=c.entry||'';
+            document.getElementById('sl').value=c.sl||'';
+            document.getElementById('tp1').value=c.tp1||'';
+            document.getElementById('tp2').value=c.tp2||'';
+            document.getElementById('tp3').value=c.tp3||'';
+            document.getElementById('side').value=c.side||'LONG';
+            document.getElementById('wave').value=c.wave||'';
+            document.getElementById('note').value=c.note||'';
+            document.getElementById('formTitle').textContent='✏️ Sửa nhận định '+c.coin;
+            document.getElementById('saveBtn').textContent='Lưu chỉnh sửa';
+            document.getElementById('cancelBtn').style.display='block';
+            window.scrollTo({top:0,behavior:'smooth'});
+        }
+
+        function deleteCoin(id,name){
+            if(!confirm('Xóa nhận định '+name+' ?')) return;
+            coinsRef.child(id).remove()
+                .then(()=>{
+                    if(editingId===id) cancelEdit();
+                    alert('Đã xóa '+name);
+                })
+                .catch(err=>alert('Lỗi: '+err.message));
+        }
+
         function escapeHtml(text){
             return String(text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
         }
+
         coinsRef.on('value', snapshot=>{
             const data=snapshot.val()||{};
-            const coins=Object.keys(data).map(key=>({id:key,...data[key]})).sort((a,b)=>b.timestamp-a.timestamp);
+            allCoins=Object.keys(data).map(key=>({id:key,...data[key]})).sort((a,b)=>b.timestamp-a.timestamp);
             const list=document.getElementById('adminList');
             if(!list) return;
-            if(!coins.length){list.innerHTML='<div class="empty">Chưa có nhận định nào</div>';return;}
+            if(!allCoins.length){list.innerHTML='<div class="empty">Chưa có nhận định nào</div>';return;}
             let html='';
-            coins.forEach(c=>{
+            allCoins.forEach(c=>{
                 const slText=(c.sl!==undefined&&c.sl!==null&&c.sl!=='')?'$'+Number(c.sl).toLocaleString(undefined,{maximumFractionDigits:6}):'--';
                 const sideClass=c.side==='LONG'?'side-long':'side-short';
-                html+='<div class="coin-card"><div class="card-header"><div style="display:flex;align-items:center;gap:10px;">';
-                html+='<div class="coin-name">'+c.coin+'</div><span class="side-badge '+sideClass+'">'+c.side+'</span></div>';
-                html+='<div class="time">'+(c.time||'')+'</div></div><div class="prices-grid">';
+                html+='<div class="coin-card"><div class="card-header"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
+                html+='<div class="coin-name">'+c.coin+'</div>';
+                html+='<span class="side-badge '+sideClass+'">'+c.side+'</span>';
+                if(c.wave) html+='<span class="wave-badge">'+c.wave+'</span>';
+                html+='</div><div class="time">'+(c.time||'')+'</div></div><div class="prices-grid">';
                 html+='<div class="price-box"><div class="label">Vào lệnh</div><div class="value">$'+Number(c.entry).toLocaleString(undefined,{maximumFractionDigits:6})+'</div></div>';
                 html+='<div class="price-box"><div class="label">Stoploss</div><div class="value sl-price">'+slText+'</div></div>';
                 html+='<div class="price-box"><div class="label">TP1</div><div class="value">$'+Number(c.tp1).toLocaleString(undefined,{maximumFractionDigits:6})+'</div></div>';
@@ -161,7 +245,10 @@
                 if(c.note&&String(c.note).trim()!==''){
                     html+='<div class="note-box"><div class="note-label">Note</div><div class="note-text">'+escapeHtml(c.note)+'</div></div>';
                 }
-                html+='</div>';
+                html+='<div class="admin-actions">';
+                html+='<button class="btn-edit" onclick="editCoin(\''+c.id+'\')">Sửa</button>';
+                html+='<button class="btn-del" onclick="deleteCoin(\''+c.id+'\',\''+c.coin+'\')">Xóa</button>';
+                html+='</div></div>';
             });
             list.innerHTML=html;
         });
