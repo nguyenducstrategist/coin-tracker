@@ -35,6 +35,12 @@ h1 {
     line-height: 1.4;
 }
 
+.admin-list-title {
+    margin: 28px 0 12px;
+    font-size: 1.15rem;
+    color: #00d2ff;
+}
+
 .x-link {
     text-align: center;
     margin-bottom: 18px;
@@ -133,11 +139,6 @@ h1 {
 .coin-card.has-hit {
     border-color: #00ff88;
     background: rgba(0,255,136,0.08);
-}
-
-.coin-card.has-sl {
-    border-color: #ff5252;
-    background: rgba(255,82,82,0.08);
 }
 
 .card-header {
@@ -246,7 +247,6 @@ h1 {
     font-size: 0.82rem;
     color: #ddd;
     line-height: 1.45;
-    white-space: normal;
 }
 
 .current-price {
