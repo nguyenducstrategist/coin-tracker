@@ -8,43 +8,47 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
-        body{background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh;padding:15px}
-        .container{max-width:1200px;margin:0 auto}
-        h1{text-align:center;margin-bottom:6px;font-size:1.6rem;background:linear-gradient(90deg,#00d2ff,#3a7bd5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-        .subtitle{text-align:center;color:#aaa;margin-bottom:10px;font-size:.85rem;line-height:1.4}
-        .x-link{text-align:center;margin-bottom:18px;font-size:.9rem}
+        body{background:linear-gradient(180deg,#0b0a1a 0%,#16143a 50%,#1a1833 100%);color:#fff;min-height:100vh;padding:10px}
+        .container{max-width:1280px;margin:0 auto}
+        h1{text-align:center;margin-bottom:3px;font-size:1.35rem;background:linear-gradient(90deg,#00d2ff,#3a7bd5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .subtitle{text-align:center;color:#888;margin-bottom:6px;font-size:.76rem;line-height:1.35}
+        .x-link{text-align:center;margin-bottom:10px;font-size:.82rem}
         .x-link a{color:#1da1f2;text-decoration:none;font-weight:600}
-        .stats{display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap}
-        .stat-box{flex:1;min-width:100px;background:rgba(255,255,255,.08);border-radius:10px;padding:12px 8px;text-align:center;border:1px solid rgba(255,255,255,.1)}
-        .stat-box .number{font-size:1.4rem;font-weight:bold;color:#00d2ff}
-        .stat-box .label{font-size:.72rem;color:#aaa;margin-top:3px}
-        .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px}
-        .filter{display:flex;gap:6px;flex-wrap:wrap}
-        .filter button{background:rgba(255,255,255,.1);padding:7px 14px;font-size:.8rem;border:none;border-radius:8px;color:#fff;cursor:pointer}
+        .stats{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+        .stat-box{flex:1;min-width:72px;background:rgba(255,255,255,.07);border-radius:8px;padding:8px 6px;text-align:center;border:1px solid rgba(255,255,255,.1)}
+        .stat-box .number{font-size:1.15rem;font-weight:bold;color:#00d2ff}
+        .stat-box .label{font-size:.66rem;color:#999;margin-top:2px}
+        .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px}
+        .filter{display:flex;gap:5px;flex-wrap:wrap}
+        .filter button{background:rgba(255,255,255,.1);padding:6px 11px;font-size:.74rem;border:none;border-radius:7px;color:#fff;cursor:pointer}
         .filter button.active{background:linear-gradient(90deg,#00d2ff,#3a7bd5)}
-        .refresh-btn{background:#00c853;padding:7px 16px;font-size:.8rem;border:none;border-radius:8px;color:#fff;cursor:pointer;font-weight:600}
-        .coin-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-        .coin-card{background:rgba(255,255,255,.07);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,.1)}
-        .coin-card.has-hit{border-color:#00ff88;background:rgba(0,255,136,.08)}
-        .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-        .coin-name{font-size:1.2rem;font-weight:700;color:#00d2ff}
-        .side-badge{padding:3px 10px;border-radius:12px;font-size:.72rem;font-weight:600}
-        .side-long{background:rgba(0,255,136,.2);color:#00ff88}
-        .side-short{background:rgba(255,82,82,.2);color:#ff5252}
-        .time{font-size:.75rem;color:#aaa}
-        .prices-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-        .price-box{background:rgba(0,0,0,.25);border-radius:8px;padding:7px 9px}
-        .price-box .label{font-size:.68rem;color:#999;margin-bottom:2px}
-        .price-box .value{font-size:.92rem;font-weight:600}
-        .tp-status{display:flex;gap:6px;flex-wrap:wrap}
-        .tp-badge{padding:4px 11px;border-radius:12px;font-size:.75rem;font-weight:600;background:rgba(255,255,255,.08);color:#bbb}
-        .tp-badge.hit{background:rgba(0,255,136,.25);color:#00ff88}
+        .refresh-btn{background:#00c853;padding:6px 12px;font-size:.74rem;border:none;border-radius:7px;color:#fff;cursor:pointer;font-weight:600}
+        .loading{text-align:center;color:#00d2ff;margin:6px 0;font-size:.8rem;display:none}
+        .table-wrap{overflow:auto;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.04);max-height:calc(100vh - 210px)}
+        table.coin-table{width:100%;border-collapse:collapse;min-width:780px}
+        .coin-table thead th{position:sticky;top:0;z-index:2;background:#1a1740;color:#9ecfff;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;padding:8px;text-align:left;border-bottom:1px solid rgba(255,255,255,.12);white-space:nowrap}
+        .coin-table tbody tr{border-bottom:1px solid rgba(255,255,255,.06);height:42px}
+        .coin-table tbody tr:hover{background:rgba(0,210,255,.07)}
+        .coin-table td{padding:6px 8px;font-size:.8rem;vertical-align:middle;white-space:nowrap}
+        .coin-table tr.has-hit{background:rgba(0,255,136,.06);box-shadow:inset 3px 0 0 #00ff88}
+        .coin-name{font-weight:700;color:#00d2ff;font-size:.88rem}
+        .side-badge,.tp-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:.66rem;font-weight:700}
+        .side-long{background:rgba(0,255,136,.18);color:#00ff88}
+        .side-short{background:rgba(255,82,82,.18);color:#ff5252}
+        .time{font-size:.7rem;color:#888}
+        .tp-status{display:flex;gap:4px}
+        .tp-badge{background:rgba(255,255,255,.08);color:#aaa}
+        .tp-badge.hit{background:rgba(0,255,136,.22);color:#00ff88}
         .current-price{font-weight:700}
         .current-price.up{color:#00ff88}
         .current-price.down{color:#ff5252}
-        .empty{text-align:center;padding:50px 20px;color:#666;font-size:1.05rem;grid-column:1/-1}
-        .loading{text-align:center;color:#00d2ff;margin:10px 0;font-size:.9rem;display:none}
-        @media (max-width:600px){.coin-list{grid-template-columns:1fr}h1{font-size:1.35rem}}
+        .empty{text-align:center;padding:36px 12px;color:#666}
+        @media (max-width:600px){
+            h1{font-size:1.12rem}
+            .stat-box .number{font-size:1rem}
+            .table-wrap{max-height:calc(100vh - 250px)}
+            table.coin-table{min-width:720px}
+        }
     </style>
 </head>
 <body>
@@ -58,7 +62,7 @@
             <div class="stat-box"><div class="number" id="tp1Count">0</div><div class="label">Đạt TP1</div></div>
             <div class="stat-box"><div class="number" id="tp2Count">0</div><div class="label">Đạt TP2</div></div>
             <div class="stat-box"><div class="number" id="tp3Count">0</div><div class="label">Đạt TP3</div></div>
-            <div class="stat-box"><div class="number" id="lastUpdate" style="font-size:.9rem">--:--</div><div class="label">Cập nhật</div></div>
+            <div class="stat-box"><div class="number" id="lastUpdate" style="font-size:.82rem">--:--</div><div class="label">Cập nhật</div></div>
         </div>
 
         <div class="toolbar">
@@ -72,7 +76,24 @@
         </div>
 
         <div id="loading" class="loading">Đang lấy giá từ Binance...</div>
-        <div class="coin-list" id="coinList"></div>
+        <div class="table-wrap">
+            <table class="coin-table">
+                <thead>
+                    <tr>
+                        <th>Coin</th>
+                        <th>Hướng</th>
+                        <th>Thời gian</th>
+                        <th>Vào lệnh</th>
+                        <th>Hiện tại</th>
+                        <th>TP1</th>
+                        <th>TP2</th>
+                        <th>TP3</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="coinList"></tbody>
+            </table>
+        </div>
     </div>
 
     <script>
@@ -178,6 +199,7 @@
             return await fetchSpotOrFutures(symbol) || await fetchAlpha(symbol) || await fetchDex(symbol);
         }
         function hasSL(c){return c.sl!==undefined&&c.sl!==null&&c.sl!==''&&!isNaN(Number(c.sl));}
+        function fmt(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:6});}
 
         async function updateAllPrices(){
             if(coins.length===0) return;
@@ -237,7 +259,7 @@
             }else if(currentFilter==='pending'){
                 filtered=coins.filter(c=>!c.hitTP1&&!c.hitTP2&&!c.hitTP3);
             }
-            if(!filtered.length){list.innerHTML='<div class="empty">Chưa có nhận định nào</div>';return;}
+            if(!filtered.length){list.innerHTML='<tr><td colspan="9" class="empty">Chưa có nhận định nào</td></tr>';return;}
             let html='';
             filtered.forEach(c=>{
                 const data=priceCache[c.coin];
@@ -246,25 +268,24 @@
                 else if(!data||data.price==null) currentHtml='<span style="color:#ff5252">Không tìm thấy</span>';
                 else{
                     const isUp=data.price>=c.entry;
-                    currentHtml='<span class="current-price '+(isUp?'up':'down')+'">$'+data.price.toLocaleString(undefined,{maximumFractionDigits:6})+'</span>';
+                    currentHtml='<span class="current-price '+(isUp?'up':'down')+'">$'+fmt(data.price)+'</span>';
                 }
                 const hasHit=c.hitTP1||c.hitTP2||c.hitTP3;
                 const sideClass=c.side==='LONG'?'side-long':'side-short';
-                html+='<div class="coin-card '+(hasHit?'has-hit':'')+'">';
-                html+='<div class="card-header"><div style="display:flex;align-items:center;gap:10px;">';
-                html+='<div class="coin-name">'+c.coin+'</div><span class="side-badge '+sideClass+'">'+c.side+'</span></div>';
-                html+='<div class="time">'+(c.time||'')+'</div></div>';
-                html+='<div class="prices-grid">';
-                html+='<div class="price-box"><div class="label">Vào lệnh</div><div class="value">$'+Number(c.entry).toLocaleString(undefined,{maximumFractionDigits:6})+'</div></div>';
-                html+='<div class="price-box"><div class="label">Giá hiện tại</div><div class="value">'+currentHtml+'</div></div>';
-                html+='<div class="price-box"><div class="label">TP1</div><div class="value">$'+Number(c.tp1).toLocaleString(undefined,{maximumFractionDigits:6})+'</div></div>';
-                html+='<div class="price-box"><div class="label">TP2</div><div class="value">$'+Number(c.tp2).toLocaleString(undefined,{maximumFractionDigits:6})+'</div></div>';
-                html+='<div class="price-box"><div class="label">TP3</div><div class="value">$'+Number(c.tp3).toLocaleString(undefined,{maximumFractionDigits:6})+'</div></div>';
-                html+='</div><div class="tp-status">';
-                html+='<div class="tp-badge '+(c.hitTP1?'hit':'')+'">TP1 '+(c.hitTP1?'✓':'○')+'</div>';
-                html+='<div class="tp-badge '+(c.hitTP2?'hit':'')+'">TP2 '+(c.hitTP2?'✓':'○')+'</div>';
-                html+='<div class="tp-badge '+(c.hitTP3?'hit':'')+'">TP3 '+(c.hitTP3?'✓':'○')+'</div>';
-                html+='</div></div>';
+                html+='<tr class="'+(hasHit?'has-hit':'')+'">';
+                html+='<td class="coin-name">'+c.coin+'</td>';
+                html+='<td><span class="side-badge '+sideClass+'">'+c.side+'</span></td>';
+                html+='<td class="time">'+(c.time||'')+'</td>';
+                html+='<td>$'+fmt(c.entry)+'</td>';
+                html+='<td>'+currentHtml+'</td>';
+                html+='<td>$'+fmt(c.tp1)+'</td>';
+                html+='<td>$'+fmt(c.tp2)+'</td>';
+                html+='<td>$'+fmt(c.tp3)+'</td>';
+                html+='<td><div class="tp-status">';
+                html+='<span class="tp-badge '+(c.hitTP1?'hit':'')+'">TP1 '+(c.hitTP1?'✓':'○')+'</span>';
+                html+='<span class="tp-badge '+(c.hitTP2?'hit':'')+'">TP2 '+(c.hitTP2?'✓':'○')+'</span>';
+                html+='<span class="tp-badge '+(c.hitTP3?'hit':'')+'">TP3 '+(c.hitTP3?'✓':'○')+'</span>';
+                html+='</div></td></tr>';
             });
             list.innerHTML=html;
         }
