@@ -114,6 +114,7 @@
         let coins = [];
         let currentFilter = 'all';
         let priceCache = {};
+        let rangeCache = {};
         let alphaListCache = null;
         let notifyReady = false;
 
@@ -143,20 +144,48 @@
             showToast(title+'\n'+body,isSL);
             if(notifyReady){try{new Notification(title,{body:body});}catch(e){}}
         }
-        async function fetchSpotOrFutures(symbol){
+        async function fetchSpotOrFuturesPrice(symbol){
             const urls=[
-                'https://api.binance.com/api/v3/ticker/24hr?symbol='+symbol+'USDT',
-                'https://fapi.binance.com/fapi/v1/ticker/24hr?symbol='+symbol+'USDT'
+                'https://api.binance.com/api/v3/ticker/price?symbol='+symbol+'USDT',
+                'https://fapi.binance.com/fapi/v1/ticker/price?symbol='+symbol+'USDT'
             ];
             for(const url of urls){
                 try{
                     const res=await fetch(url);
                     if(!res.ok) continue;
-                    const d=await res.json();
-                    const price=parseFloat(d.lastPrice);
-                    const high=parseFloat(d.highPrice);
-                    const low=parseFloat(d.lowPrice);
-                    if(!isNaN(price)) return {price, high:isNaN(high)?price:high, low:isNaN(low)?price:low};
+                    const price=parseFloat((await res.json()).price);
+                    if(!isNaN(price)) return price;
+                }catch(e){}
+            }
+            return null;
+        }
+        function pickInterval(startTs){
+            const age=Date.now()-(startTs||Date.now());
+            if(age<=3.4*24*3600*1000) return '5m';
+            if(age<=10*24*3600*1000) return '15m';
+            if(age<=40*24*3600*1000) return '1h';
+            return '4h';
+        }
+        async function fetchRangeSince(symbol,startTs){
+            const start=startTs||Date.now();
+            const interval=pickInterval(start);
+            const urls=[
+                'https://api.binance.com/api/v3/klines?symbol='+symbol+'USDT&interval='+interval+'&startTime='+start+'&limit=1000',
+                'https://fapi.binance.com/fapi/v1/klines?symbol='+symbol+'USDT&interval='+interval+'&startTime='+start+'&limit=1000'
+            ];
+            for(const url of urls){
+                try{
+                    const res=await fetch(url);
+                    if(!res.ok) continue;
+                    const arr=await res.json();
+                    if(!Array.isArray(arr)||!arr.length) continue;
+                    let high=-Infinity,low=Infinity;
+                    arr.forEach(k=>{
+                        const h=parseFloat(k[2]),l=parseFloat(k[3]);
+                        if(!isNaN(h)&&h>high) high=h;
+                        if(!isNaN(l)&&l<low) low=l;
+                    });
+                    if(high!==-Infinity) return {high,low};
                 }catch(e){}
             }
             return null;
@@ -171,18 +200,15 @@
                 return alphaListCache;
             }catch(e){return null;}
         }
-        async function fetchAlpha(symbol){
+        async function fetchAlphaPrice(symbol){
             const list=await getAlphaList();
             if(!list||!list.length) return null;
             const item=list.find(t=>(t.symbol||'').toUpperCase()===symbol);
             if(!item) return null;
             const price=parseFloat(item.price);
-            const high=parseFloat(item.priceHigh24h);
-            const low=parseFloat(item.priceLow24h);
-            if(isNaN(price)) return null;
-            return {price, high:isNaN(high)?price:high, low:isNaN(low)?price:low};
+            return isNaN(price)?null:price;
         }
-        async function fetchDex(symbol){
+        async function fetchDexPrice(symbol){
             try{
                 const res=await fetch('https://api.dexscreener.com/latest/dex/search?q='+encodeURIComponent(symbol));
                 if(!res.ok) return null;
@@ -191,12 +217,15 @@
                 if(!pairs.length) return null;
                 pairs.sort((a,b)=>(b.liquidity&&b.liquidity.usd?b.liquidity.usd:0)-(a.liquidity&&a.liquidity.usd?a.liquidity.usd:0));
                 const price=parseFloat(pairs[0].priceUsd);
-                if(isNaN(price)) return null;
-                return {price,high:price,low:price};
+                return isNaN(price)?null:price;
             }catch(e){return null;}
         }
-        async function fetchPriceData(symbol){
-            return await fetchSpotOrFutures(symbol) || await fetchAlpha(symbol) || await fetchDex(symbol);
+        async function fetchPrice(symbol){
+            const p=await fetchSpotOrFuturesPrice(symbol);
+            if(p!=null) return p;
+            const a=await fetchAlphaPrice(symbol);
+            if(a!=null) return a;
+            return await fetchDexPrice(symbol);
         }
         function hasSL(c){return c.sl!==undefined&&c.sl!==null&&c.sl!==''&&!isNaN(Number(c.sl));}
         function fmt(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:6});}
@@ -207,23 +236,28 @@
             const loading=document.getElementById('loading');
             if(loading) loading.style.display='block';
             const unique=[...new Set(coins.map(c=>c.coin))];
-            await Promise.all(unique.map(async s=>{priceCache[s]=await fetchPriceData(s);}));
+            await Promise.all(unique.map(async s=>{priceCache[s]=await fetchPrice(s);}));
+            await Promise.all(coins.map(async c=>{
+                rangeCache[c.id]=await fetchRangeSince(c.coin,c.timestamp||Date.now());
+            }));
             const updates={}; const newTPHits=[]; const newSLHits=[];
             coins.forEach(c=>{
-                const data=priceCache[c.coin];
-                if(!data||data.price==null) return;
-                const price=data.price, high=data.high!=null?data.high:price, low=data.low!=null?data.low:price;
+                const price=priceCache[c.coin];
+                const range=rangeCache[c.id];
+                const high=range?range.high:(price!=null?price:null);
+                const low=range?range.low:(price!=null?price:null);
+                if(price==null&&high==null) return;
                 let hitTP1=c.hitTP1||false, hitTP2=c.hitTP2||false, hitTP3=c.hitTP3||false, hitSL=c.hitSL||false;
                 if(c.side==='LONG'){
-                    if(high>=c.tp1||price>=c.tp1) hitTP1=true;
-                    if(high>=c.tp2||price>=c.tp2) hitTP2=true;
-                    if(high>=c.tp3||price>=c.tp3) hitTP3=true;
-                    if(hasSL(c)&&(low<=Number(c.sl)||price<=Number(c.sl))) hitSL=true;
+                    if(high!=null&&(high>=c.tp1||(price!=null&&price>=c.tp1))) hitTP1=true;
+                    if(high!=null&&(high>=c.tp2||(price!=null&&price>=c.tp2))) hitTP2=true;
+                    if(high!=null&&(high>=c.tp3||(price!=null&&price>=c.tp3))) hitTP3=true;
+                    if(hasSL(c)&&low!=null&&(low<=Number(c.sl)||(price!=null&&price<=Number(c.sl)))) hitSL=true;
                 }else{
-                    if(low<=c.tp1||price<=c.tp1) hitTP1=true;
-                    if(low<=c.tp2||price<=c.tp2) hitTP2=true;
-                    if(low<=c.tp3||price<=c.tp3) hitTP3=true;
-                    if(hasSL(c)&&(high>=Number(c.sl)||price>=Number(c.sl))) hitSL=true;
+                    if(low!=null&&(low<=c.tp1||(price!=null&&price<=c.tp1))) hitTP1=true;
+                    if(low!=null&&(low<=c.tp2||(price!=null&&price<=c.tp2))) hitTP2=true;
+                    if(low!=null&&(low<=c.tp3||(price!=null&&price<=c.tp3))) hitTP3=true;
+                    if(hasSL(c)&&high!=null&&(high>=Number(c.sl)||(price!=null&&price>=Number(c.sl)))) hitSL=true;
                 }
                 if(hitTP1!==c.hitTP1||hitTP2!==c.hitTP2||hitTP3!==c.hitTP3||hitSL!==!!c.hitSL){
                     updates[c.id+'/hitTP1']=hitTP1;
@@ -262,13 +296,13 @@
             if(!filtered.length){list.innerHTML='<tr><td colspan="9" class="empty">Chưa có nhận định nào</td></tr>';return;}
             let html='';
             filtered.forEach(c=>{
-                const data=priceCache[c.coin];
+                const price=priceCache[c.coin];
                 let currentHtml='';
-                if(data===undefined) currentHtml='<span style="color:#888">Đang tải...</span>';
-                else if(!data||data.price==null) currentHtml='<span style="color:#ff5252">Không tìm thấy</span>';
+                if(price===undefined) currentHtml='<span style="color:#888">Đang tải...</span>';
+                else if(price==null) currentHtml='<span style="color:#ff5252">Không tìm thấy</span>';
                 else{
-                    const isUp=data.price>=c.entry;
-                    currentHtml='<span class="current-price '+(isUp?'up':'down')+'">$'+fmt(data.price)+'</span>';
+                    const isUp=price>=c.entry;
+                    currentHtml='<span class="current-price '+(isUp?'up':'down')+'">$'+fmt(price)+'</span>';
                 }
                 const hasHit=c.hitTP1||c.hitTP2||c.hitTP3;
                 const sideClass=c.side==='LONG'?'side-long':'side-short';
