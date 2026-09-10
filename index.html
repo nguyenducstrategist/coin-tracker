@@ -116,6 +116,7 @@
         let priceCache = {};
         let rangeCache = {};
         let alphaListCache = null;
+        let alphaItemCache = {};
         let notifyReady = false;
 
         coinsRef.on('value', (snapshot) => {
@@ -144,6 +145,72 @@
             showToast(title+'\n'+body,isSL);
             if(notifyReady){try{new Notification(title,{body:body});}catch(e){}}
         }
+        async function getAlphaList(){
+            if(alphaListCache) return alphaListCache;
+            try{
+                const res=await fetch('https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list');
+                if(!res.ok) return null;
+                const d=await res.json();
+                alphaListCache=d.data||[];
+                return alphaListCache;
+            }catch(e){return null;}
+        }
+        async function getAlphaItem(symbol){
+            if(alphaItemCache[symbol]) return alphaItemCache[symbol];
+            const list=await getAlphaList();
+            if(!list||!list.length) return null;
+            const item=list.find(t=>(t.symbol||'').toUpperCase()===symbol);
+            if(item) alphaItemCache[symbol]=item;
+            return item||null;
+        }
+        function pickInterval(startTs){
+            const age=Date.now()-(startTs||Date.now());
+            if(age<=3.4*24*3600*1000) return '5m';
+            if(age<=10*24*3600*1000) return '15m';
+            if(age<=40*24*3600*1000) return '1h';
+            return '4h';
+        }
+        function rangeFromKlines(arr){
+            if(!Array.isArray(arr)||!arr.length) return null;
+            let high=-Infinity,low=Infinity;
+            arr.forEach(k=>{
+                const h=parseFloat(k[2]),l=parseFloat(k[3]);
+                if(!isNaN(h)&&h>high) high=h;
+                if(!isNaN(l)&&l<low) low=l;
+            });
+            return high===-Infinity?null:{high,low};
+        }
+        async function fetchCexRange(symbol,start,interval){
+            const urls=[
+                'https://api.binance.com/api/v3/klines?symbol='+symbol+'USDT&interval='+interval+'&startTime='+start+'&limit=1000',
+                'https://fapi.binance.com/fapi/v1/klines?symbol='+symbol+'USDT&interval='+interval+'&startTime='+start+'&limit=1000'
+            ];
+            for(const url of urls){
+                try{
+                    const res=await fetch(url);
+                    if(!res.ok) continue;
+                    const range=rangeFromKlines(await res.json());
+                    if(range) return range;
+                }catch(e){}
+            }
+            return null;
+        }
+        async function fetchAlphaRange(symbol,start,interval){
+            try{
+                const item=await getAlphaItem(symbol);
+                if(!item||!item.alphaId) return null;
+                const url='https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines?symbol='+encodeURIComponent(item.alphaId+'USDT')+'&interval='+interval+'&startTime='+start+'&limit=1500';
+                const res=await fetch(url);
+                if(!res.ok) return null;
+                const d=await res.json();
+                return rangeFromKlines(d.data||d);
+            }catch(e){return null;}
+        }
+        async function fetchRangeSince(symbol,startTs){
+            const start=startTs||Date.now();
+            const interval=pickInterval(start);
+            return await fetchCexRange(symbol,start,interval) || await fetchAlphaRange(symbol,start,interval);
+        }
         async function fetchSpotOrFuturesPrice(symbol){
             const urls=[
                 'https://api.binance.com/api/v3/ticker/price?symbol='+symbol+'USDT',
@@ -159,51 +226,8 @@
             }
             return null;
         }
-        function pickInterval(startTs){
-            const age=Date.now()-(startTs||Date.now());
-            if(age<=3.4*24*3600*1000) return '5m';
-            if(age<=10*24*3600*1000) return '15m';
-            if(age<=40*24*3600*1000) return '1h';
-            return '4h';
-        }
-        async function fetchRangeSince(symbol,startTs){
-            const start=startTs||Date.now();
-            const interval=pickInterval(start);
-            const urls=[
-                'https://api.binance.com/api/v3/klines?symbol='+symbol+'USDT&interval='+interval+'&startTime='+start+'&limit=1000',
-                'https://fapi.binance.com/fapi/v1/klines?symbol='+symbol+'USDT&interval='+interval+'&startTime='+start+'&limit=1000'
-            ];
-            for(const url of urls){
-                try{
-                    const res=await fetch(url);
-                    if(!res.ok) continue;
-                    const arr=await res.json();
-                    if(!Array.isArray(arr)||!arr.length) continue;
-                    let high=-Infinity,low=Infinity;
-                    arr.forEach(k=>{
-                        const h=parseFloat(k[2]),l=parseFloat(k[3]);
-                        if(!isNaN(h)&&h>high) high=h;
-                        if(!isNaN(l)&&l<low) low=l;
-                    });
-                    if(high!==-Infinity) return {high,low};
-                }catch(e){}
-            }
-            return null;
-        }
-        async function getAlphaList(){
-            if(alphaListCache) return alphaListCache;
-            try{
-                const res=await fetch('https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list');
-                if(!res.ok) return null;
-                const d=await res.json();
-                alphaListCache=d.data||[];
-                return alphaListCache;
-            }catch(e){return null;}
-        }
         async function fetchAlphaPrice(symbol){
-            const list=await getAlphaList();
-            if(!list||!list.length) return null;
-            const item=list.find(t=>(t.symbol||'').toUpperCase()===symbol);
+            const item=await getAlphaItem(symbol);
             if(!item) return null;
             const price=parseFloat(item.price);
             return isNaN(price)?null:price;
