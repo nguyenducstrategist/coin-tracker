@@ -173,25 +173,63 @@
             if(!rows.length){box.innerHTML='<div class="hist-empty">'+(logFilter==='today'?'Hôm nay chưa có coin nào dính':'Chưa có lịch sử')+'</div>';return;}
             box.innerHTML=rows.map(x=>{const sl=x.kind==='SL',dca=x.kind==='DCA';return '<div class="hist-item '+(sl?'sl':(dca?'dca':''))+'"><div><span class="coin">'+x.coin+'</span> '+x.side+' — <span class="'+(sl?'kind-sl':(dca?'kind-dca':'kind-tp'))+'">dính '+x.kind+'</span></div><div class="when">'+(x.time||'')+'</div></div>';}).join('');
         }
+        async function getAlphaItem(symbol){
+            try{
+                if(!alphaListCache){
+                    const res=await fetch('https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list');
+                    if(res.ok) alphaListCache=(await res.json()).data||[];
+                }
+                if(!alphaListCache) return null;
+                return alphaListCache.find(t=>(t.symbol||'').toUpperCase()===symbol)||null;
+            }catch(e){return null;}
+        }
+        function pickInterval(startTs){
+            const age=Date.now()-(startTs||Date.now());
+            if(age<=3.4*24*3600*1000) return '5m';
+            if(age<=10*24*3600*1000) return '15m';
+            if(age<=40*24*3600*1000) return '1h';
+            return '4h';
+        }
+        function rangeFromKlines(arr){
+            if(!Array.isArray(arr)||!arr.length) return null;
+            let high=-Infinity,low=Infinity;
+            arr.forEach(k=>{
+                const h=parseFloat(k[2]),l=parseFloat(k[3]);
+                if(!isNaN(h)&&h>high) high=h;
+                if(!isNaN(l)&&l<low) low=l;
+            });
+            return high===-Infinity?null:{high,low};
+        }
         async function fetchCurrent(symbol){
             const urls=['https://api.binance.com/api/v3/ticker/price?symbol='+symbol+'USDT','https://fapi.binance.com/fapi/v1/ticker/price?symbol='+symbol+'USDT'];
             for(const url of urls){try{const res=await fetch(url);if(!res.ok)continue;const price=parseFloat((await res.json()).price);if(!isNaN(price))return price;}catch(e){}}
-            try{if(!alphaListCache){const res=await fetch('https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list');if(res.ok)alphaListCache=(await res.json()).data||[];}if(alphaListCache){const item=alphaListCache.find(t=>(t.symbol||'').toUpperCase()===symbol);if(item){const price=parseFloat(item.price);if(!isNaN(price))return price;}}}catch(e){}
+            try{const item=await getAlphaItem(symbol);if(item){const price=parseFloat(item.price);if(!isNaN(price))return price;}}catch(e){}
             try{const res=await fetch('https://api.dexscreener.com/latest/dex/search?q='+encodeURIComponent(symbol));if(res.ok){const pairs=((await res.json()).pairs||[]).filter(p=>p.baseToken&&p.baseToken.symbol&&p.baseToken.symbol.toUpperCase()===symbol);if(pairs.length){pairs.sort((a,b)=>(b.liquidity&&b.liquidity.usd?b.liquidity.usd:0)-(a.liquidity&&a.liquidity.usd?a.liquidity.usd:0));const price=parseFloat(pairs[0].priceUsd);if(!isNaN(price))return price;}}}catch(e){}
             return null;
         }
         async function fetchRangeSince(symbol,startTs){
             const start=startTs||Date.now();
-            const urls=['https://api.binance.com/api/v3/klines?symbol='+symbol+'USDT&interval=5m&startTime='+start+'&limit=1000','https://fapi.binance.com/fapi/v1/klines?symbol='+symbol+'USDT&interval=5m&startTime='+start+'&limit=1000'];
+            const interval=pickInterval(start);
+            const urls=['https://api.binance.com/api/v3/klines?symbol='+symbol+'USDT&interval='+interval+'&startTime='+start+'&limit=1000','https://fapi.binance.com/fapi/v1/klines?symbol='+symbol+'USDT&interval='+interval+'&startTime='+start+'&limit=1000'];
             for(const url of urls){
                 try{
-                    const res=await fetch(url);if(!res.ok)continue;const arr=await res.json();
-                    if(!Array.isArray(arr)||!arr.length)continue;
-                    let high=-Infinity,low=Infinity;
-                    arr.forEach(k=>{const h=parseFloat(k[2]),l=parseFloat(k[3]);if(!isNaN(h)&&h>high)high=h;if(!isNaN(l)&&l<low)low=l;});
-                    if(high!==-Infinity)return {high,low};
+                    const res=await fetch(url);if(!res.ok)continue;
+                    const range=rangeFromKlines(await res.json());
+                    if(range) return range;
                 }catch(e){}
             }
+            try{
+                const item=await getAlphaItem(symbol);
+                if(item&&item.alphaId){
+                    const url='https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines?symbol='+encodeURIComponent(item.alphaId+'USDT')+'&interval='+interval+'&startTime='+start+'&limit=1500';
+                    const res=await fetch(url);
+                    if(res.ok){
+                        const d=await res.json();
+                        const range=rangeFromKlines(d.data||d);
+                        if(range) return range;
+                    }
+                }
+            }catch(e){}
             return null;
         }
         function applyFlags(c,price,high,low,canUnmark,updates){
