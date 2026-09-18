@@ -45,12 +45,13 @@
         .wave-form{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:14px}
         .wave-guide{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
         .wave-card{background:#16132e;border:1px solid rgba(122,215,255,.25);border-radius:12px;padding:14px;border-left:4px solid #7ad7ff}
-        .wave-card-name{display:block;width:100%;font-weight:800;color:#ffffff;font-size:1.05rem;line-height:1.3;margin:0 0 10px;background:transparent;-webkit-text-fill-color:#ffffff}
+        .wave-card-name{display:block;width:100%;font-weight:800;color:#fff;font-size:1.05rem;margin:0 0 10px;-webkit-text-fill-color:#fff}
         .wave-card-desc{font-size:.82rem;color:#d7d7d7;line-height:1.5;margin-bottom:10px;min-height:38px}
         .wave-edit-desc{min-height:72px;resize:vertical;font-size:.82rem;margin-bottom:8px}
         .wave-card-actions{display:flex;gap:8px;flex-wrap:wrap}
-        .btn-save-wave{flex:1;background:#3a7bd5;border:none;color:#fff;border-radius:8px;padding:8px 10px;font-size:.75rem;font-weight:700;cursor:pointer}
-        .btn-del-wave{flex:1;background:#ff5252;border:none;color:#fff;border-radius:8px;padding:8px 10px;font-size:.75rem;font-weight:700;cursor:pointer}
+        .btn-save-wave,.btn-del-wave{flex:1;border:none;color:#fff;border-radius:8px;padding:8px 10px;font-size:.75rem;font-weight:700;cursor:pointer}
+        .btn-save-wave{background:#3a7bd5}
+        .btn-del-wave{background:#ff5252}
         .coin-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
         .coin-card{background:rgba(255,255,255,.07);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,.1)}
         .coin-card.has-hit{border-color:#00ff88}
@@ -94,7 +95,7 @@
     </div>
     <div class="container" id="adminContent" style="display:none;">
         <h1 id="formTitle">📥 Thêm Nhận định</h1>
-        <p class="subtitle">Chỉ tính đỉnh/đáy từ lúc nhập lệnh. SL/DCA chỉ hiện ở Admin. Bấm badge để tích tay khi cần.</p>
+        <p class="subtitle">Chỉ tính đỉnh/đáy từ lúc nhập lệnh. SL/DCA chỉ hiện ở Admin. Thông báo chỉ khi dính TP mới.</p>
         <div class="form-card">
             <div class="form-row">
                 <div><label>COIN</label><input type="text" id="coin" placeholder="BTC"></div>
@@ -104,19 +105,16 @@
                 <div><label>TP1</label><input type="number" id="tp1" placeholder="66000" step="any"></div>
                 <div><label>TP2</label><input type="number" id="tp2" placeholder="67500" step="any"></div>
                 <div><label>TP3</label><input type="number" id="tp3" placeholder="69000" step="any"></div>
-                <div><label>Hướng</label>
-                    <select id="side"><option value="LONG">LONG 📈</option><option value="SHORT">SHORT 📉</option></select>
-                </div>
+                <div><label>Hướng</label><select id="side"><option value="LONG">LONG 📈</option><option value="SHORT">SHORT 📉</option></select></div>
                 <div><label>Chọn sóng</label><select id="wave"><option value="">-- Chọn sóng --</option></select></div>
             </div>
             <div class="note-wrap"><label>Note / Phân tích</label><textarea id="note" placeholder="Viết phân tích của bạn vào đây..."></textarea></div>
             <button class="save-btn" id="saveBtn" onclick="saveCoin()">+ Lưu nhận định</button>
             <button class="cancel-btn" id="cancelBtn" onclick="cancelEdit()">Hủy sửa</button>
         </div>
-
         <div class="wave-board">
             <div class="wave-head"><h2>Giải thích các loại sóng</h2></div>
-            <p style="color:#aaa;font-size:.82rem;margin-bottom:12px;line-height:1.45;">Thêm / xóa sóng ở đây. Xóa sóng chỉ bỏ khỏi danh sách chọn, <b style="color:#fff;">không xóa coin</b>.</p>
+            <p style="color:#aaa;font-size:.82rem;margin-bottom:12px;line-height:1.45;">Xóa sóng chỉ bỏ khỏi danh sách chọn, <b style="color:#fff;">không xóa coin</b>.</p>
             <div class="wave-form">
                 <div><label>Tên sóng mới</label><input type="text" id="newWaveName" placeholder="Ví dụ: Sóng săn đáy"></div>
                 <div><label>Giải thích sóng</label><textarea id="newWaveDesc" placeholder="Viết ý nghĩa sóng này..."></textarea></div>
@@ -124,7 +122,6 @@
             </div>
             <div class="wave-guide" id="waveGuide"></div>
         </div>
-
         <div class="hist-board">
             <div class="hist-head">
                 <h2>Lịch sử dính TP / SL / DCA</h2>
@@ -162,7 +159,7 @@
         const coinsRef=firebase.database().ref('coins');
         const logsRef=firebase.database().ref('hitLogs');
         const wavesRef=firebase.database().ref('waves');
-        let allCoins=[],hitLogs=[],waveList=[],editingId=null,priceCache={},rangeCache={},alphaListCache=null,logFilter='today',coinFilter='all',wavesSeeded=false;
+        let allCoins=[],hitLogs=[],waveList=[],editingId=null,priceCache={},rangeCache={},alphaListCache=null,logFilter='today',coinFilter='all',wavesSeeded=false,notifyReady=false;
         const DEFAULT_WAVES=[
             {name:'Sóng hồi',desc:'Giá giảm rồi bật lại theo nhịp hồi. Thường canh LONG khi hồi khỏe, hoặc SHORT nếu hồi yếu rồi gãy.'},
             {name:'Sóng FOMO',desc:'Giá chạy mạnh vì đám đông đuổi giá. Dễ có đuôi nến trên. Ưu tiên chốt TP nhanh, không đuổi đỉnh.'},
@@ -189,7 +186,40 @@
         function validLongDCA(c){return hasDCA(c)&&Number(c.dca)<Number(c.entry);}
         function validShortDCA(c){return hasDCA(c)&&Number(c.dca)>Number(c.entry);}
         function isSameDay(ts){const d=new Date(ts),n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();}
-        function checkPassword(){if(document.getElementById('password').value===ADMIN_PASSWORD){document.getElementById('loginBox').style.display='none';document.getElementById('adminContent').style.display='block';updateAllPrices();}else document.getElementById('error').style.display='block';}
+        function alertKey(id,kind){return 'tpAlert_'+id+'_'+kind;}
+        function alreadyAlerted(id,kind){try{return localStorage.getItem(alertKey(id,kind))==='1';}catch(e){return false;}}
+        function markAlerted(id,kind){try{localStorage.setItem(alertKey(id,kind),'1');}catch(e){}}
+        function rememberOldHits(){
+            allCoins.forEach(c=>{
+                if(c.hitTP1) markAlerted(c.id,'TP1');
+                if(c.hitTP2) markAlerted(c.id,'TP2');
+                if(c.hitTP3) markAlerted(c.id,'TP3');
+            });
+        }
+        function askNotify(){
+            if(!('Notification' in window)) return;
+            if(Notification.permission==='granted'){notifyReady=true;return;}
+            if(Notification.permission!=='denied') Notification.requestPermission().then(p=>{notifyReady=(p==='granted');});
+        }
+        function showToast(text){
+            let box=document.getElementById('hitToast');
+            if(!box){box=document.createElement('div');box.id='hitToast';document.body.appendChild(box);}
+            box.style.cssText='position:fixed;top:16px;right:16px;z-index:9999;max-width:320px;color:#fff;padding:12px 14px;border-radius:10px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:pre-line;background:#00c853;';
+            box.textContent=text;box.style.display='block';
+            setTimeout(()=>{box.style.display='none';},7000);
+        }
+        function notifyTP(title,body){
+            showToast(title+'\n'+body);
+            if(notifyReady){try{new Notification(title,{body:body});}catch(e){}}
+        }
+        function checkPassword(){
+            if(document.getElementById('password').value===ADMIN_PASSWORD){
+                document.getElementById('loginBox').style.display='none';
+                document.getElementById('adminContent').style.display='block';
+                askNotify();
+                updateAllPrices();
+            }else document.getElementById('error').style.display='block';
+        }
         function addLog(coin,side,kind){logsRef.push({coin,side,kind,time:new Date().toLocaleString('vi-VN'),timestamp:Date.now()});}
         function setLogFilter(type){logFilter=type;document.querySelectorAll('.hist-tabs button').forEach(b=>b.classList.remove('active'));if(event&&event.target)event.target.classList.add('active');renderLogs();}
         function setCoinFilter(type){coinFilter=type;document.querySelectorAll('.filter-bar button').forEach(b=>b.classList.remove('active'));if(event&&event.target)event.target.classList.add('active');renderAdminList();}
@@ -213,14 +243,7 @@
             box.innerHTML=waveList.map((w,i)=>{
                 const name=waveNameOf(w,i);
                 const desc=w.desc||w.note||w.explain||'';
-                return '<div class="wave-card">'
-                    +'<div class="wave-card-name">'+escapeHtml(name)+'</div>'
-                    +'<div class="wave-card-desc">'+(desc?escapeHtml(desc).replace(/\n/g,'<br>'):'Chưa có giải thích')+'</div>'
-                    +'<textarea class="wave-edit-desc" id="waveDesc_'+w.id+'" placeholder="Nhập / sửa giải thích cho '+escapeHtml(name)+'">'+escapeHtml(desc).replace(/<br>/g,'\n')+'</textarea>'
-                    +'<div class="wave-card-actions">'
-                    +'<button class="btn-save-wave" onclick="saveWaveDesc(\''+w.id+'\')">Lưu giải thích</button>'
-                    +'<button class="btn-del-wave" onclick="deleteWave(\''+w.id+'\',\''+escapeAttr(name)+'\')">Xóa: '+escapeHtml(name)+'</button>'
-                    +'</div></div>';
+                return '<div class="wave-card"><div class="wave-card-name">'+escapeHtml(name)+'</div><div class="wave-card-desc">'+(desc?escapeHtml(desc).replace(/\n/g,'<br>'):'Chưa có giải thích')+'</div><textarea class="wave-edit-desc" id="waveDesc_'+w.id+'" placeholder="Nhập / sửa giải thích cho '+escapeHtml(name)+'">'+escapeHtml(desc)+'</textarea><div class="wave-card-actions"><button class="btn-save-wave" onclick="saveWaveDesc(\''+w.id+'\')">Lưu giải thích</button><button class="btn-del-wave" onclick="deleteWave(\''+w.id+'\',\''+escapeAttr(name)+'\')">Xóa: '+escapeHtml(name)+'</button></div></div>';
             }).join('');
         }
         function addWave(){
@@ -228,7 +251,7 @@
             const desc=(document.getElementById('newWaveDesc').value||'').trim();
             if(!name){alert('Nhập tên sóng!');return;}
             if(waveList.some((w,i)=>waveNameOf(w,i).toLowerCase()===name.toLowerCase())){alert('Sóng này đã có!');return;}
-            wavesRef.push({name:name,desc:desc,timestamp:Date.now()}).then(()=>{
+            wavesRef.push({name,desc,timestamp:Date.now()}).then(()=>{
                 document.getElementById('newWaveName').value='';
                 document.getElementById('newWaveDesc').value='';
                 alert('✅ Đã thêm sóng: '+name);
@@ -236,8 +259,7 @@
         }
         function saveWaveDesc(id){
             const el=document.getElementById('waveDesc_'+id);
-            const desc=el?el.value.trim():'';
-            wavesRef.child(id).update({desc:desc}).then(()=>alert('✅ Đã lưu giải thích')).catch(err=>alert('Lỗi: '+err.message));
+            wavesRef.child(id).update({desc:el?el.value.trim():''}).then(()=>alert('✅ Đã lưu giải thích')).catch(err=>alert('Lỗi: '+err.message));
         }
         function deleteWave(id,name){
             if(!confirm('Xóa sóng "'+name+'" khỏi danh sách?\nCoin đã gắn sóng này vẫn giữ nguyên, không bị xóa.')) return;
@@ -247,15 +269,10 @@
             waveList.forEach((w,i)=>{
                 const n=(w.name||w.title||w.wave||w.label||'').trim();
                 const d=(w.desc||'').trim();
-                if(!n && DEFAULT_WAVES[i]){
-                    wavesRef.child(w.id).update({name:DEFAULT_WAVES[i].name,desc:d||DEFAULT_WAVES[i].desc});
-                }else if(n && !d){
-                    const found=DEFAULT_WAVES.find(x=>x.name===n);
-                    if(found) wavesRef.child(w.id).update({desc:found.desc});
-                }
+                if(!n && DEFAULT_WAVES[i]) wavesRef.child(w.id).update({name:DEFAULT_WAVES[i].name,desc:d||DEFAULT_WAVES[i].desc});
+                else if(n && !d){const found=DEFAULT_WAVES.find(x=>x.name===n); if(found) wavesRef.child(w.id).update({desc:found.desc});}
             });
         }
-
         function renderLogs(){
             const box=document.getElementById('histList');if(!box)return;
             let rows=[...hitLogs];
@@ -340,7 +357,7 @@
                 }catch(e){return null;}
             })();
         }
-        function applyFlags(c,price,high,low,canUnmark,updates){
+        function applyFlags(c,price,high,low,canUnmark,updates,newTPHits){
             let tp1=false,tp2=false,tp3=false,sl=false,dca=false;
             if(c.side==='LONG'){
                 tp1=high>=Number(c.tp1)||(price!=null&&price>=Number(c.tp1));
@@ -357,13 +374,28 @@
             }
             function setFlag(field,kind,next){
                 const prev=!!c[field];
-                if(next&&!prev){updates[c.id+'/'+field]=true;updates[c.id+'/'+field+'Time']=new Date().toLocaleString('vi-VN');addLog(c.coin,c.side,kind);}
-                else if(!next&&prev&&canUnmark){updates[c.id+'/'+field]=false;}
+                if(next&&!prev){
+                    updates[c.id+'/'+field]=true;
+                    updates[c.id+'/'+field+'Time']=new Date().toLocaleString('vi-VN');
+                    addLog(c.coin,c.side,kind);
+                    if((kind==='TP1'||kind==='TP2'||kind==='TP3') && !alreadyAlerted(c.id,kind)){
+                        markAlerted(c.id,kind);
+                        newTPHits.push(c.coin+' '+c.side+' dính '+kind);
+                    }
+                }else if(!next&&prev&&canUnmark&&kind!=='TP1'&&kind!=='TP2'&&kind!=='TP3'){
+                    updates[c.id+'/'+field]=false;
+                }
             }
-            setFlag('hitTP1','TP1',tp1); setFlag('hitTP2','TP2',tp2); setFlag('hitTP3','TP3',tp3); setFlag('hitSL','SL',sl); setFlag('hitDCA','DCA',dca);
+            setFlag('hitTP1','TP1',tp1);
+            setFlag('hitTP2','TP2',tp2);
+            setFlag('hitTP3','TP3',tp3);
+            setFlag('hitSL','SL',sl);
+            setFlag('hitDCA','DCA',dca);
         }
         async function updateAllPrices(){
             if(!allCoins.length)return;
+            rememberOldHits();
+            askNotify();
             const loading=document.getElementById('loading');
             if(loading)loading.style.display='block';
             const unique=[...new Set(allCoins.map(c=>c.coin))];
@@ -375,22 +407,29 @@
                 srcMap[s]=picked?picked.src:null;
             }));
             await Promise.all(allCoins.map(async c=>{rangeCache[c.id]=await fetchRangeSince(c.coin,c.timestamp||Date.now(),srcMap[c.coin]);}));
-            const updates={};
+            const updates={}; const newTPHits=[];
             allCoins.forEach(c=>{
                 const price=priceCache[c.coin];
                 let range=rangeCache[c.id];
                 if(range && !sanePrice(range.high,c.entry) && !sanePrice(range.low,c.entry)) range=null;
-                if(range) applyFlags(c,price,range.high,range.low,true,updates);
-                else if(price!=null) applyFlags(c,price,price,price,false,updates);
+                if(range) applyFlags(c,price,range.high,range.low,true,updates,newTPHits);
+                else if(price!=null) applyFlags(c,price,price,price,false,updates,newTPHits);
             });
             if(Object.keys(updates).length)coinsRef.update(updates);
+            if(newTPHits.length) notifyTP('Đã dính target', newTPHits.join('\n'));
             if(loading)loading.style.display='none';
             renderAdminList();
         }
         function forceHit(id,field,kind){
             const c=allCoins.find(x=>x.id===id);if(!c||c[field])return;
             const up={};up[field]=true;up[field+'Time']=new Date().toLocaleString('vi-VN');
-            coinsRef.child(id).update(up).then(()=>addLog(c.coin,c.side,kind));
+            coinsRef.child(id).update(up).then(()=>{
+                addLog(c.coin,c.side,kind);
+                if((kind==='TP1'||kind==='TP2'||kind==='TP3') && !alreadyAlerted(id,kind)){
+                    markAlerted(id,kind);
+                    notifyTP('Đã dính target', c.coin+' '+c.side+' dính '+kind);
+                }
+            });
         }
         function clearForm(){['coin','entry','dca','sl','tp1','tp2','tp3','note'].forEach(id=>document.getElementById(id).value='');document.getElementById('side').value='LONG';document.getElementById('wave').value='';}
         function cancelEdit(){editingId=null;clearForm();document.getElementById('formTitle').textContent='📥 Thêm Nhận định';document.getElementById('saveBtn').textContent='+ Lưu nhận định';document.getElementById('cancelBtn').style.display='none';}
@@ -473,19 +512,13 @@
             });
             list.innerHTML=html;
         }
-        coinsRef.on('value',snap=>{const data=snap.val()||{};allCoins=Object.keys(data).map(k=>({id:k,...data[k]})).sort((a,b)=>b.timestamp-a.timestamp);fillWaveSelect();renderAdminList();});
+        coinsRef.on('value',snap=>{const data=snap.val()||{};allCoins=Object.keys(data).map(k=>({id:k,...data[k]})).sort((a,b)=>b.timestamp-a.timestamp);rememberOldHits();fillWaveSelect();renderAdminList();});
         logsRef.on('value',snap=>{const data=snap.val()||{};hitLogs=Object.keys(data).map(k=>({id:k,...data[k]})).sort((a,b)=>b.timestamp-a.timestamp);renderLogs();});
         wavesRef.on('value',snap=>{
             const data=snap.val();
-            if(!data && !wavesSeeded){
-                wavesSeeded=true;
-                DEFAULT_WAVES.forEach(w=>wavesRef.push({name:w.name,desc:w.desc,timestamp:Date.now()}));
-                return;
-            }
+            if(!data && !wavesSeeded){wavesSeeded=true;DEFAULT_WAVES.forEach(w=>wavesRef.push({name:w.name,desc:w.desc,timestamp:Date.now()}));return;}
             waveList=Object.keys(data||{}).map(k=>({id:k,...(typeof data[k]==='object'&&data[k]?data[k]:{name:String(data[k]||'')})})).sort((a,b)=>(a.timestamp||0)-(b.timestamp||0));
-            seedMissingWaveNames();
-            fillWaveSelect();
-            renderWaveGuide();
+            seedMissingWaveNames(); fillWaveSelect(); renderWaveGuide();
         });
         setInterval(()=>{const box=document.getElementById('adminContent');if(box&&box.style.display!=='none')updateAllPrices();},30000);
     </script>
