@@ -56,7 +56,6 @@
         <h1>📈 Top Coin Alpha tăng trưởng đột biến</h1>
         <p class="subtitle">Cập nhật theo thời gian thực từng ngày • TP1 • TP2 • TP3 • Tự động lấy giá Binance • Minh bạch công khai</p>
         <div class="x-link">Theo dõi nhận định trên X: <a href="https://x.com/ducstrategist11" target="_blank">@ducstrategist11</a></div>
-
         <div class="stats">
             <div class="stat-box"><div class="number" id="total">0</div><div class="label">Tổng lệnh</div></div>
             <div class="stat-box"><div class="number" id="tp1Count">0</div><div class="label">Đạt TP1</div></div>
@@ -64,7 +63,6 @@
             <div class="stat-box"><div class="number" id="tp3Count">0</div><div class="label">Đạt TP3</div></div>
             <div class="stat-box"><div class="number" id="lastUpdate" style="font-size:.82rem">--:--</div><div class="label">Cập nhật</div></div>
         </div>
-
         <div class="toolbar">
             <div class="filter">
                 <button class="active" onclick="filterList('all')">Tất cả</button>
@@ -74,28 +72,19 @@
             </div>
             <button class="refresh-btn" onclick="updateAllPrices()">🔄 Cập nhật giá</button>
         </div>
-
         <div id="loading" class="loading">Đang lấy giá từ Binance...</div>
         <div class="table-wrap">
             <table class="coin-table">
                 <thead>
                     <tr>
-                        <th>Coin</th>
-                        <th>Hướng</th>
-                        <th>Thời gian</th>
-                        <th>Vào lệnh</th>
-                        <th>Hiện tại</th>
-                        <th>TP1</th>
-                        <th>TP2</th>
-                        <th>TP3</th>
-                        <th>Trạng thái</th>
+                        <th>Coin</th><th>Hướng</th><th>Thời gian</th><th>Vào lệnh</th>
+                        <th>Hiện tại</th><th>TP1</th><th>TP2</th><th>TP3</th><th>Trạng thái</th>
                     </tr>
                 </thead>
                 <tbody id="coinList"></tbody>
             </table>
         </div>
     </div>
-
     <script>
         const firebaseConfig = {
           apiKey: "AIzaSyDKA8vVF_aSF-K6s5KYE_rvqfWczKcq58I",
@@ -110,58 +99,70 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const coinsRef = db.ref('coins');
+        let coins=[], currentFilter='all', priceCache={}, rangeCache={}, alphaListCache=null, alphaItemCache={}, notifyReady=false;
 
-        let coins = [];
-        let currentFilter = 'all';
-        let priceCache = {};
-        let rangeCache = {};
-        let alphaListCache = null;
-        let alphaItemCache = {};
-        let notifyReady = false;
+        function alertKey(id,kind){return 'tpAlert_'+id+'_'+kind;}
+        function alreadyAlerted(id,kind){try{return localStorage.getItem(alertKey(id,kind))==='1';}catch(e){return false;}}
+        function markAlerted(id,kind){try{localStorage.setItem(alertKey(id,kind),'1');}catch(e){}}
+        function rememberOldHits(){
+            coins.forEach(c=>{
+                if(c.hitTP1) markAlerted(c.id,'TP1');
+                if(c.hitTP2) markAlerted(c.id,'TP2');
+                if(c.hitTP3) markAlerted(c.id,'TP3');
+            });
+        }
 
-        coinsRef.on('value', (snapshot) => {
-            const data = snapshot.val() || {};
-            coins = Object.keys(data).map(key => ({id:key,...data[key]})).sort((a,b)=>b.timestamp-a.timestamp);
-            renderList();
-            updateStats();
+        coinsRef.on('value', snapshot=>{
+            const data=snapshot.val()||{};
+            coins=Object.keys(data).map(key=>({id:key,...data[key]})).sort((a,b)=>b.timestamp-a.timestamp);
+            rememberOldHits();
+            renderList(); updateStats();
         });
 
         function askNotify(){
             if(!('Notification' in window)) return;
             if(Notification.permission==='granted'){notifyReady=true;return;}
-            if(Notification.permission!=='denied'){
-                Notification.requestPermission().then(p=>{notifyReady=(p==='granted');});
-            }
+            if(Notification.permission!=='denied') Notification.requestPermission().then(p=>{notifyReady=(p==='granted');});
         }
-        function showToast(text,isSL){
+        function showToast(text){
             let box=document.getElementById('hitToast');
             if(!box){box=document.createElement('div');box.id='hitToast';document.body.appendChild(box);}
-            box.style.cssText='position:fixed;top:16px;right:16px;z-index:9999;max-width:320px;color:#fff;padding:12px 14px;border-radius:10px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:pre-line;';
-            box.style.background=isSL?'#ff5252':'#00c853';
+            box.style.cssText='position:fixed;top:16px;right:16px;z-index:9999;max-width:320px;color:#fff;padding:12px 14px;border-radius:10px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:pre-line;background:#00c853;';
             box.textContent=text;box.style.display='block';
             setTimeout(()=>{box.style.display='none';},7000);
         }
-        function notifyHit(title,body,isSL){
-            showToast(title+'\n'+body,isSL);
+        function notifyTP(title,body){
+            showToast(title+'\n'+body);
             if(notifyReady){try{new Notification(title,{body:body});}catch(e){}}
         }
+        function hasNum(v){return v!==undefined&&v!==null&&v!==''&&!isNaN(Number(v));}
+        function hasSL(c){return hasNum(c.sl);}
+        function sanePrice(price,entry){
+            if(price==null||isNaN(Number(price))) return false;
+            if(!hasNum(entry)||!(Number(entry)>0)) return true;
+            const r=Number(price)/Number(entry);
+            return r>=0.05 && r<=20;
+        }
+        function validLongSL(c){return hasSL(c)&&Number(c.sl)<Number(c.entry);}
+        function validShortSL(c){return hasSL(c)&&Number(c.sl)>Number(c.entry);}
         async function getAlphaList(){
             if(alphaListCache) return alphaListCache;
             try{
                 const res=await fetch('https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list');
                 if(!res.ok) return null;
-                const d=await res.json();
-                alphaListCache=d.data||[];
+                alphaListCache=((await res.json()).data)||[];
                 return alphaListCache;
             }catch(e){return null;}
         }
         async function getAlphaItem(symbol){
             if(alphaItemCache[symbol]) return alphaItemCache[symbol];
             const list=await getAlphaList();
-            if(!list||!list.length) return null;
-            const item=list.find(t=>(t.symbol||'').toUpperCase()===symbol);
-            if(item) alphaItemCache[symbol]=item;
-            return item||null;
+            if(!list) return null;
+            const matches=list.filter(t=>(t.symbol||'').toUpperCase()===symbol);
+            if(!matches.length) return null;
+            matches.sort((a,b)=>(parseFloat(b.volume24h)||0)-(parseFloat(a.volume24h)||0));
+            alphaItemCache[symbol]=matches[0];
+            return matches[0];
         }
         function pickInterval(startTs){
             const age=Date.now()-(startTs||Date.now());
@@ -170,58 +171,35 @@
             if(age<=40*24*3600*1000) return '1h';
             return '4h';
         }
-        function rangeFromKlines(arr){
+        function rangeFromKlines(arr,startTs){
             if(!Array.isArray(arr)||!arr.length) return null;
-            let high=-Infinity,low=Infinity;
+            const start=Number(startTs)||0;
+            let high=-Infinity,low=Infinity,ok=false;
             arr.forEach(k=>{
-                const h=parseFloat(k[2]),l=parseFloat(k[3]);
+                const open=Number(k[0]);
+                if(start && open<start) return;
+                const h=parseFloat(k[2]), l=parseFloat(k[3]);
                 if(!isNaN(h)&&h>high) high=h;
                 if(!isNaN(l)&&l<low) low=l;
+                ok=true;
             });
-            return high===-Infinity?null:{high,low};
+            return ok?{high,low}:null;
         }
-        async function fetchCexRange(symbol,start,interval){
-            const urls=[
-                'https://api.binance.com/api/v3/klines?symbol='+symbol+'USDT&interval='+interval+'&startTime='+start+'&limit=1000',
-                'https://fapi.binance.com/fapi/v1/klines?symbol='+symbol+'USDT&interval='+interval+'&startTime='+start+'&limit=1000'
-            ];
-            for(const url of urls){
-                try{
-                    const res=await fetch(url);
-                    if(!res.ok) continue;
-                    const range=rangeFromKlines(await res.json());
-                    if(range) return range;
-                }catch(e){}
-            }
-            return null;
+        async function fetchJson(url){
+            const res=await fetch(url);
+            if(!res.ok) return null;
+            return await res.json();
         }
-        async function fetchAlphaRange(symbol,start,interval){
-            try{
-                const item=await getAlphaItem(symbol);
-                if(!item||!item.alphaId) return null;
-                const url='https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines?symbol='+encodeURIComponent(item.alphaId+'USDT')+'&interval='+interval+'&startTime='+start+'&limit=1500';
-                const res=await fetch(url);
-                if(!res.ok) return null;
-                const d=await res.json();
-                return rangeFromKlines(d.data||d);
-            }catch(e){return null;}
-        }
-        async function fetchRangeSince(symbol,startTs){
-            const start=startTs||Date.now();
-            const interval=pickInterval(start);
-            return await fetchCexRange(symbol,start,interval) || await fetchAlphaRange(symbol,start,interval);
-        }
-        async function fetchSpotOrFuturesPrice(symbol){
+        async function fetchCexPrice(symbol){
             const urls=[
                 'https://api.binance.com/api/v3/ticker/price?symbol='+symbol+'USDT',
                 'https://fapi.binance.com/fapi/v1/ticker/price?symbol='+symbol+'USDT'
             ];
             for(const url of urls){
                 try{
-                    const res=await fetch(url);
-                    if(!res.ok) continue;
-                    const price=parseFloat((await res.json()).price);
-                    if(!isNaN(price)) return price;
+                    const d=await fetchJson(url);
+                    const price=parseFloat(d&&d.price);
+                    if(!isNaN(price)) return {price,src:url.indexOf('fapi')>=0?'futures':'spot'};
                 }catch(e){}
             }
             return null;
@@ -230,44 +208,82 @@
             const item=await getAlphaItem(symbol);
             if(!item) return null;
             const price=parseFloat(item.price);
-            return isNaN(price)?null:price;
+            return isNaN(price)?null:{price,src:'alpha',alphaId:item.alphaId};
         }
-        async function fetchDexPrice(symbol){
+        async function fetchDexPrice(symbol,entry){
             try{
-                const res=await fetch('https://api.dexscreener.com/latest/dex/search?q='+encodeURIComponent(symbol));
-                if(!res.ok) return null;
-                const d=await res.json();
-                const pairs=(d.pairs||[]).filter(p=>p.baseToken&&p.baseToken.symbol&&p.baseToken.symbol.toUpperCase()===symbol);
+                const d=await fetchJson('https://api.dexscreener.com/latest/dex/search?q='+encodeURIComponent(symbol));
+                let pairs=(d&&d.pairs||[]).filter(p=>p.baseToken&&p.baseToken.symbol&&p.baseToken.symbol.toUpperCase()===symbol);
+                pairs=pairs.filter(p=>sanePrice(parseFloat(p.priceUsd),entry));
                 if(!pairs.length) return null;
                 pairs.sort((a,b)=>(b.liquidity&&b.liquidity.usd?b.liquidity.usd:0)-(a.liquidity&&a.liquidity.usd?a.liquidity.usd:0));
                 const price=parseFloat(pairs[0].priceUsd);
-                return isNaN(price)?null:price;
+                return isNaN(price)?null:{price,src:'dex'};
             }catch(e){return null;}
         }
-        async function fetchPrice(symbol){
-            const p=await fetchSpotOrFuturesPrice(symbol);
-            if(p!=null) return p;
-            const a=await fetchAlphaPrice(symbol);
-            if(a!=null) return a;
-            return await fetchDexPrice(symbol);
+        async function pickPrice(symbol,entry){
+            const cands=[];
+            const cex=await fetchCexPrice(symbol); if(cex&&sanePrice(cex.price,entry)) cands.push(cex);
+            const al=await fetchAlphaPrice(symbol); if(al&&sanePrice(al.price,entry)) cands.push(al);
+            const dx=await fetchDexPrice(symbol,entry); if(dx&&sanePrice(dx.price,entry)) cands.push(dx);
+            if(!cands.length) return cex||al||dx||null;
+            cands.sort((a,b)=>Math.abs(a.price-Number(entry||a.price))-Math.abs(b.price-Number(entry||b.price)));
+            return cands[0];
         }
-        function hasSL(c){return c.sl!==undefined&&c.sl!==null&&c.sl!==''&&!isNaN(Number(c.sl));}
+        async function fetchCexRange(symbol,start,interval,src){
+            const url=src==='futures'
+                ? 'https://fapi.binance.com/fapi/v1/klines?symbol='+symbol+'USDT&interval='+interval+'&startTime='+start+'&limit=1000'
+                : 'https://api.binance.com/api/v3/klines?symbol='+symbol+'USDT&interval='+interval+'&startTime='+start+'&limit=1000';
+            try{return rangeFromKlines(await fetchJson(url),start);}catch(e){return null;}
+        }
+        async function fetchAlphaRange(symbol,start,interval){
+            try{
+                const item=await getAlphaItem(symbol);
+                if(!item||!item.alphaId) return null;
+                const url='https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines?symbol='+encodeURIComponent(item.alphaId+'USDT')+'&interval='+interval+'&startTime='+start+'&limit=1500';
+                const d=await fetchJson(url);
+                return rangeFromKlines(d&&(d.data||d),start);
+            }catch(e){return null;}
+        }
+        async function fetchRangeSince(symbol,startTs,src){
+            const start=startTs||Date.now();
+            const interval=pickInterval(start);
+            if(src==='futures'||src==='spot'){
+                const r=await fetchCexRange(symbol,start,interval,src);
+                if(r) return r;
+            }
+            if(src==='alpha'){
+                const r=await fetchAlphaRange(symbol,start,interval);
+                if(r) return r;
+            }
+            return await fetchCexRange(symbol,start,interval,'spot')
+                || await fetchCexRange(symbol,start,interval,'futures')
+                || await fetchAlphaRange(symbol,start,interval);
+        }
         function fmt(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:6});}
 
         async function updateAllPrices(){
-            if(coins.length===0) return;
+            if(!coins.length) return;
+            rememberOldHits();
             askNotify();
             const loading=document.getElementById('loading');
             if(loading) loading.style.display='block';
             const unique=[...new Set(coins.map(c=>c.coin))];
-            await Promise.all(unique.map(async s=>{priceCache[s]=await fetchPrice(s);}));
-            await Promise.all(coins.map(async c=>{
-                rangeCache[c.id]=await fetchRangeSince(c.coin,c.timestamp||Date.now());
+            const srcMap={};
+            await Promise.all(unique.map(async s=>{
+                const sample=coins.find(c=>c.coin===s);
+                const picked=await pickPrice(s,sample&&sample.entry);
+                priceCache[s]=picked?picked.price:null;
+                srcMap[s]=picked?picked.src:null;
             }));
-            const updates={}; const newTPHits=[]; const newSLHits=[];
+            await Promise.all(coins.map(async c=>{
+                rangeCache[c.id]=await fetchRangeSince(c.coin,c.timestamp||Date.now(),srcMap[c.coin]);
+            }));
+            const updates={}; const newTPHits=[];
             coins.forEach(c=>{
                 const price=priceCache[c.coin];
-                const range=rangeCache[c.id];
+                let range=rangeCache[c.id];
+                if(range && !sanePrice(range.high,c.entry) && !sanePrice(range.low,c.entry)) range=null;
                 const high=range?range.high:(price!=null?price:null);
                 const low=range?range.low:(price!=null?price:null);
                 if(price==null&&high==null) return;
@@ -276,35 +292,39 @@
                     if(high!=null&&(high>=c.tp1||(price!=null&&price>=c.tp1))) hitTP1=true;
                     if(high!=null&&(high>=c.tp2||(price!=null&&price>=c.tp2))) hitTP2=true;
                     if(high!=null&&(high>=c.tp3||(price!=null&&price>=c.tp3))) hitTP3=true;
-                    if(hasSL(c)&&low!=null&&(low<=Number(c.sl)||(price!=null&&price<=Number(c.sl)))) hitSL=true;
+                    if(validLongSL(c)&&low!=null&&sanePrice(low,c.entry)&&(low<=Number(c.sl)||(price!=null&&price<=Number(c.sl)))) hitSL=true;
                 }else{
                     if(low!=null&&(low<=c.tp1||(price!=null&&price<=c.tp1))) hitTP1=true;
                     if(low!=null&&(low<=c.tp2||(price!=null&&price<=c.tp2))) hitTP2=true;
                     if(low!=null&&(low<=c.tp3||(price!=null&&price<=c.tp3))) hitTP3=true;
-                    if(hasSL(c)&&high!=null&&(high>=Number(c.sl)||(price!=null&&price>=Number(c.sl)))) hitSL=true;
+                    if(validShortSL(c)&&high!=null&&sanePrice(high,c.entry)&&(high>=Number(c.sl)||(price!=null&&price>=Number(c.sl)))) hitSL=true;
                 }
                 if(hitTP1!==c.hitTP1||hitTP2!==c.hitTP2||hitTP3!==c.hitTP3||hitSL!==!!c.hitSL){
                     updates[c.id+'/hitTP1']=hitTP1;
                     updates[c.id+'/hitTP2']=hitTP2;
                     updates[c.id+'/hitTP3']=hitTP3;
                     updates[c.id+'/hitSL']=hitSL;
-                    const just=[];
-                    if(hitTP1&&!c.hitTP1) just.push('TP1');
-                    if(hitTP2&&!c.hitTP2) just.push('TP2');
-                    if(hitTP3&&!c.hitTP3) just.push('TP3');
-                    if(just.length) newTPHits.push(c.coin+' '+c.side+' dính '+just.join(', '));
-                    if(hitSL&&!c.hitSL) newSLHits.push(c.coin+' '+c.side+' dính STOPLOSS');
+                }
+                if(hitTP1 && !c.hitTP1 && !alreadyAlerted(c.id,'TP1')){
+                    markAlerted(c.id,'TP1');
+                    newTPHits.push(c.coin+' '+c.side+' dính TP1');
+                }
+                if(hitTP2 && !c.hitTP2 && !alreadyAlerted(c.id,'TP2')){
+                    markAlerted(c.id,'TP2');
+                    newTPHits.push(c.coin+' '+c.side+' dính TP2');
+                }
+                if(hitTP3 && !c.hitTP3 && !alreadyAlerted(c.id,'TP3')){
+                    markAlerted(c.id,'TP3');
+                    newTPHits.push(c.coin+' '+c.side+' dính TP3');
                 }
             });
             if(Object.keys(updates).length) coinsRef.update(updates);
-            if(newSLHits.length) notifyHit('Dính Stoploss', newSLHits.join('\n'), true);
-            if(newTPHits.length) notifyHit('Đã dính target', newTPHits.join('\n'), false);
+            if(newTPHits.length) notifyTP('Đã dính target', newTPHits.join('\n'));
             renderList(); updateStats();
             if(loading) loading.style.display='none';
             const last=document.getElementById('lastUpdate');
             if(last) last.textContent=new Date().toLocaleTimeString('vi-VN');
         }
-
         function renderList(){
             const list=document.getElementById('coinList');
             if(!list) return;
@@ -312,11 +332,8 @@
             if(currentFilter==='today'){
                 const today=new Date().toDateString();
                 filtered=coins.filter(c=>new Date(c.timestamp).toDateString()===today);
-            }else if(currentFilter==='hit'){
-                filtered=coins.filter(c=>c.hitTP1||c.hitTP2||c.hitTP3);
-            }else if(currentFilter==='pending'){
-                filtered=coins.filter(c=>!c.hitTP1&&!c.hitTP2&&!c.hitTP3);
-            }
+            }else if(currentFilter==='hit') filtered=coins.filter(c=>c.hitTP1||c.hitTP2||c.hitTP3);
+            else if(currentFilter==='pending') filtered=coins.filter(c=>!c.hitTP1&&!c.hitTP2&&!c.hitTP3);
             if(!filtered.length){list.innerHTML='<tr><td colspan="9" class="empty">Chưa có nhận định nào</td></tr>';return;}
             let html='';
             filtered.forEach(c=>{
@@ -324,10 +341,7 @@
                 let currentHtml='';
                 if(price===undefined) currentHtml='<span style="color:#888">Đang tải...</span>';
                 else if(price==null) currentHtml='<span style="color:#ff5252">Không tìm thấy</span>';
-                else{
-                    const isUp=price>=c.entry;
-                    currentHtml='<span class="current-price '+(isUp?'up':'down')+'">$'+fmt(price)+'</span>';
-                }
+                else currentHtml='<span class="current-price '+(price>=c.entry?'up':'down')+'">$'+fmt(price)+'</span>';
                 const hasHit=c.hitTP1||c.hitTP2||c.hitTP3;
                 const sideClass=c.side==='LONG'?'side-long':'side-short';
                 html+='<tr class="'+(hasHit?'has-hit':'')+'">';
