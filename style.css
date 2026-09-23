@@ -349,7 +349,29 @@ h1 {
 
 @media (max-width: 600px) {
     .coin-list {
-        grid-template-columns: 1fr !important;
+        g.pin-note{
+    position:sticky;top:8px;z-index:50;
+    background:#ffe566;
+    color:#c40000;
+    border:3px solid #e11d2e;
+    border-radius:14px;
+    padding:14px 16px;
+    margin:0 0 18px;
+    box-shadow:0 8px 22px rgba(0,0,0,.28);
+}
+.pin-note h3{
+    margin:0 0 8px;
+    font-size:1.02rem;
+    letter-spacing:.02em;
+    text-align:center;
+    color:#b00000;
+    -webkit-text-fill-color:#b00000;
+}
+.pin-note ol{
+    margin:0;padding-left:22px;
+    font-size:.92rem;font-weight:800;line-height:1.55;
+}
+.pin-note li{margin:2px 0}rid-template-columns: 1fr !important;
     }
     h1 {
         font-size: 1.35rem;
